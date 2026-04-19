@@ -29,7 +29,7 @@ export interface QueueCounts {
 export interface QueueInfo {
   name: string
   displayName: string
-  prefix: string | undefined
+  prefix?: string
   counts: QueueCounts
   isPaused: boolean
 }

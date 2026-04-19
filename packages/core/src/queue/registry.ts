@@ -64,9 +64,9 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
         infos.push({
           name,
           displayName: cfg.displayName ?? name,
-          prefix: cfg.prefix,
           counts,
           isPaused,
+          ...(cfg.prefix !== undefined ? { prefix: cfg.prefix } : {}),
         })
       }
       return infos
