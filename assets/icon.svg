@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="muleta">
+  <title>muleta</title>
+  <g color="#c43a2e">
+    <path d="M4 20 L4 4 L13 8 L20 5 L20 14 L13 17 L4 20 Z" fill="currentColor" fill-opacity="0.18"></path>
+    <path d="M4 4 L4 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M4 4 L13 8 L20 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M20 5 L20 14 L13 17 L4 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M13 8 L13 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.5" stroke-linecap="round"></path>
+  </g>
+</svg>
