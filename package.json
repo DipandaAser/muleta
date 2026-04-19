@@ -14,7 +14,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
