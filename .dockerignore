@@ -1,0 +1,31 @@
+# Dependencies (reinstalled inside the image)
+**/node_modules
+
+# Build outputs
+**/dist
+**/build
+**/.turbo
+**/.svelte-kit
+**/*.tsbuildinfo
+
+# Tests/coverage (image is a runtime, not a dev env)
+**/coverage
+**/tests
+
+# Git / editor / OS
+.git
+.github
+.vscode
+.idea
+**/.DS_Store
+
+# Logs
+**/*.log
+
+# Project-local
+plan
+.claude
+CLAUDE.md
+
+# Generated assets
+assets/dist
