@@ -13,13 +13,15 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "lint": "biome check .",
-    "format": "biome format --write .",
+    "lint": "biome check . && prettier --check \"**/*.svelte\"",
+    "format": "biome format --write . && prettier --write \"**/*.svelte\"",
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
     "@types/node": "^25.6.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-svelte": "^3.5.1",
     "turbo": "^2.9.6",
     "typescript": "^6.0.3"
   }

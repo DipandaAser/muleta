@@ -11,9 +11,7 @@ function isActive(href: string | undefined): boolean {
 }
 </script>
 
-<aside
-  class="flex h-screen w-58 flex-col border-r border-base-300 bg-base-200 overflow-hidden"
->
+<aside class="flex h-screen w-58 flex-col border-r border-base-300 bg-base-200 overflow-hidden">
   <!-- brand -->
   <div class="flex h-12 items-center px-3 border-b border-base-300 shrink-0">
     <BrandIntro />
@@ -40,21 +38,15 @@ function isActive(href: string | undefined): boolean {
                 : 'text-base-content/75 hover:bg-base-300/60 hover:text-base-content'}"
             >
               {#if active}
-                <span
-                  class="absolute -left-1.5 top-1.5 bottom-1.5 w-0.5 rounded bg-primary"
-                ></span>
+                <span class="absolute -left-1.5 top-1.5 bottom-1.5 w-0.5 rounded bg-primary"></span>
               {/if}
               <Ico
                 size={14}
-                class="{active
-                  ? 'text-primary'
-                  : 'text-base-content/50'} {item.iconClass ?? ''}"
+                class="{active ? 'text-primary' : 'text-base-content/50'} {item.iconClass ?? ''}"
               />
               <span>{item.label}</span>
               {#if item.count}
-                <span
-                  class="ml-auto font-mono-muleta text-[11px] text-base-content/50 tnum"
-                >
+                <span class="ml-auto font-mono-muleta text-[11px] text-base-content/50 tnum">
                   {item.count}
                 </span>
               {/if}
@@ -64,10 +56,7 @@ function isActive(href: string | undefined): boolean {
               class="flex h-7 items-center gap-2.5 px-1.5 rounded-md text-[13px] text-base-content/40 cursor-not-allowed"
               title="Coming soon"
             >
-              <Ico
-                size={14}
-                class="text-base-content/30 {item.iconClass ?? ''}"
-              />
+              <Ico size={14} class="text-base-content/30 {item.iconClass ?? ''}" />
               <span>{item.label}</span>
             </div>
           {/if}

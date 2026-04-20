@@ -1,38 +1,37 @@
 <script lang="ts">
-  import { page } from "$app/state"
-  import { Bell, Moon, Search, Sun } from "@lucide/svelte"
-  import { NAV } from "./nav"
-  import { theme } from "./theme.svelte"
+import { page } from "$app/state"
+import { Bell, Moon, Search, Sun } from "@lucide/svelte"
+import { NAV } from "./nav"
+import { theme } from "./theme.svelte"
 
-  const NAV_ITEMS = NAV.flatMap((section) => section.items)
+const NAV_ITEMS = NAV.flatMap((section) => section.items)
 
-  // The nav item whose route matches the current path. Guard on href so
-  // disabled placeholders (href === undefined) don't match everything via
-  // startsWith("").
-  let activeNavItem = $derived(
-    NAV_ITEMS.find((it) => it.href && page.url.pathname.startsWith(it.href)) ??
-      null,
-  )
+// The nav item whose route matches the current path. Guard on href so
+// disabled placeholders (href === undefined) don't match everything via
+// startsWith("").
+let activeNavItem = $derived(
+  NAV_ITEMS.find((it) => it.href && page.url.pathname.startsWith(it.href)) ?? null,
+)
 
-  // First crumb uses the nav item's label; subsequent crumbs are the
-  // remaining path segments. Each crumb also knows its cumulative href
-  // so we can link back up the hierarchy.
-  type Crumb = { label: string; href: string }
-  let crumbs = $derived.by<Crumb[]>(() => {
-    const segs = page.url.pathname.split("/").filter(Boolean)
-    if (segs.length === 0) {
-      return [
-        {
-          label: activeNavItem?.label ?? "Queues",
-          href: activeNavItem?.href ?? "/",
-        },
-      ]
-    }
-    return segs.map((seg, i) => ({
-      label: i === 0 ? (activeNavItem?.label ?? seg) : seg,
-      href: `/${segs.slice(0, i + 1).join("/")}`,
-    }))
-  })
+// First crumb uses the nav item's label; subsequent crumbs are the
+// remaining path segments. Each crumb also knows its cumulative href
+// so we can link back up the hierarchy.
+type Crumb = { label: string; href: string }
+let crumbs = $derived.by<Crumb[]>(() => {
+  const segs = page.url.pathname.split("/").filter(Boolean)
+  if (segs.length === 0) {
+    return [
+      {
+        label: activeNavItem?.label ?? "Queues",
+        href: activeNavItem?.href ?? "/",
+      },
+    ]
+  }
+  return segs.map((seg, i) => ({
+    label: i === 0 ? (activeNavItem?.label ?? seg) : seg,
+    href: `/${segs.slice(0, i + 1).join("/")}`,
+  }))
+})
 </script>
 
 <header
@@ -49,10 +48,7 @@
             <span class="inline-flex gap-2 items-center">
               {#if showIcon && activeNavItem}
                 {@const Ico = activeNavItem.icon}
-                <Ico
-                  size={14}
-                  class="text-base-content/60 {activeNavItem.iconClass ?? ''}"
-                />
+                <Ico size={14} class="text-base-content/60 {activeNavItem.iconClass ?? ''}" />
               {/if}
               {c.label}
             </span>
@@ -60,10 +56,7 @@
             <a href={c.href} class="inline-flex gap-2 items-center">
               {#if showIcon && activeNavItem}
                 {@const Ico = activeNavItem.icon}
-                <Ico
-                  size={14}
-                  class="text-base-content/60 {activeNavItem.iconClass ?? ''}"
-                />
+                <Ico size={14} class="text-base-content/60 {activeNavItem.iconClass ?? ''}" />
               {/if}
               {c.label}
             </a>
