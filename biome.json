@@ -16,6 +16,7 @@
       "!**/.svelte-kit",
       "!**/coverage",
       "!**/*.tsbuildinfo",
+      "!**/*.svelte",
       "!pnpm-lock.yaml"
     ]
   },
@@ -63,28 +64,5 @@
         "organizeImports": "on"
       }
     }
-  },
-  "overrides": [
-    {
-      "includes": ["**/*.svelte"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedImports": "off",
-            "noUnusedVariables": "off"
-          },
-          "style": {
-            "useImportType": "off"
-          }
-        }
-      },
-      "assist": {
-        "actions": {
-          "source": {
-            "organizeImports": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }

@@ -55,13 +55,7 @@ function onHover() {
   aria-label="muleta"
   title="muleta"
 >
-  <svg
-    viewBox="0 0 88 24"
-    width="88"
-    height="24"
-    class="brand-intro-svg"
-    aria-hidden="true"
-  >
+  <svg viewBox="0 0 88 24" width="88" height="24" class="brand-intro-svg" aria-hidden="true">
     <!-- Dust cloud (stage 2 only) -->
     <g class="bi-dust">
       <circle cx="52" cy="20" r="1.5" fill="currentColor" opacity="0.25" />
@@ -122,13 +116,7 @@ function onHover() {
 
     <!-- "muleta" wordmark (letters fade in one by one during stage 3) -->
     <g class="bi-text">
-      <text
-        x="26"
-        y="17"
-        font-size="14"
-        font-weight="600"
-        letter-spacing="-0.09em"
-      >
+      <text x="26" y="17" font-size="14" font-weight="600" letter-spacing="-0.09em">
         <tspan class="bi-ch" style="animation-delay:0ms">m</tspan>
         <tspan class="bi-ch" style="animation-delay:40ms">u</tspan>
         <tspan class="bi-ch" style="animation-delay:80ms">l</tspan>
@@ -141,172 +129,172 @@ function onHover() {
 </div>
 
 <style>
-  .brand-intro {
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    color: var(--color-primary);
-    height: 24px;
-  }
-  .brand-intro-svg {
-    display: block;
-    overflow: visible;
-  }
-  .brand-intro-svg text {
-    fill: var(--color-base-content);
-    font-family: var(--font-sans);
-    paint-order: stroke fill;
-  }
+.brand-intro {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-primary);
+  height: 24px;
+}
+.brand-intro-svg {
+  display: block;
+  overflow: visible;
+}
+.brand-intro-svg text {
+  fill: var(--color-base-content);
+  font-family: var(--font-sans);
+  paint-order: stroke fill;
+}
 
-  /* Resting poses — transitions carry elements between stages */
+/* Resting poses — transitions carry elements between stages */
+.bi-cape {
+  transform-origin: 12px 12px;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.bi-bull {
+  opacity: 0;
+  transition:
+    transform 0.4s linear,
+    opacity 0.15s ease-out;
+}
+.bi-dust {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+.bi-ch {
+  opacity: 0;
+}
+
+/* Stage 1 — charge: cape raises, bull gallops in from offstage right */
+.stage-1 .bi-cape {
+  transform: translate(0, -2px) rotate(-8deg) scale(1.05, 0.95);
+}
+.stage-1 .bi-bull {
+  opacity: 1;
+  transform: translate(-28px, 0);
+  animation: bi-gallop-in 0.38s cubic-bezier(0.45, 0, 0.35, 1);
+}
+@keyframes bi-gallop-in {
+  0% {
+    transform: translate(18px, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-28px, 0);
+    opacity: 1;
+  }
+}
+
+/* Stage 2 — pass: bull through cape zone, cape sweeps to the right */
+.stage-2 .bi-cape {
+  transform: translate(6px, 0) rotate(22deg) scale(1.1, 0.9) skewX(-6deg);
+}
+.stage-2 .bi-bull {
+  opacity: 1;
+  transform: translate(-70px, 0);
+  animation: bi-gallop-through 0.44s linear;
+}
+@keyframes bi-gallop-through {
+  0% {
+    transform: translate(-28px, 0);
+  }
+  100% {
+    transform: translate(-70px, 0);
+  }
+}
+.stage-2 .bi-dust {
+  opacity: 1;
+  animation: bi-dust-puff 0.44s ease-out;
+}
+@keyframes bi-dust-puff {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: 50px 20px;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6) translate(-6px, -1px);
+    transform-origin: 50px 20px;
+  }
+}
+
+/* Stage 3 — flourish: bull gone, cape wobbles back to rest, letters fade in */
+.stage-3 .bi-cape {
+  transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  animation: bi-flourish 0.68s cubic-bezier(0.25, 1.4, 0.5, 1);
+}
+@keyframes bi-flourish {
+  0% {
+    transform: translate(6px, 0) rotate(22deg) scale(1.1, 0.9);
+  }
+  40% {
+    transform: translate(-2px, 0) rotate(-6deg) scale(1, 1.03);
+  }
+  70% {
+    transform: translate(0, 0) rotate(3deg) scale(1, 1);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  }
+}
+.stage-3 .bi-bull {
+  opacity: 0;
+  transform: translate(-88px, 0);
+}
+.stage-3 .bi-ch {
+  animation: bi-letter-in 0.36s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes bi-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stage 4 — rest: lock in final state */
+.stage-4 .bi-cape {
+  transform: none;
+}
+.stage-4 .bi-bull {
+  opacity: 0;
+  transform: translate(28px, 0);
+}
+.stage-4 .bi-dust {
+  opacity: 0;
+}
+.stage-4 .bi-ch {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-intro *,
+  .bi-cape,
+  .bi-bull,
+  .bi-dust,
+  .bi-ch {
+    animation: none !important;
+    transition: none !important;
+  }
   .bi-cape {
-    transform-origin: 12px 12px;
-    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: none !important;
   }
-  .bi-bull {
-    opacity: 0;
-    transition:
-      transform 0.4s linear,
-      opacity 0.15s ease-out;
-  }
+  .bi-bull,
   .bi-dust {
-    opacity: 0;
-    transition: opacity 0.2s ease-out;
+    opacity: 0 !important;
   }
   .bi-ch {
-    opacity: 0;
+    opacity: 1 !important;
   }
-
-  /* Stage 1 — charge: cape raises, bull gallops in from offstage right */
-  .stage-1 .bi-cape {
-    transform: translate(0, -2px) rotate(-8deg) scale(1.05, 0.95);
-  }
-  .stage-1 .bi-bull {
-    opacity: 1;
-    transform: translate(-28px, 0);
-    animation: bi-gallop-in 0.38s cubic-bezier(0.45, 0, 0.35, 1);
-  }
-  @keyframes bi-gallop-in {
-    0% {
-      transform: translate(18px, 0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    100% {
-      transform: translate(-28px, 0);
-      opacity: 1;
-    }
-  }
-
-  /* Stage 2 — pass: bull through cape zone, cape sweeps to the right */
-  .stage-2 .bi-cape {
-    transform: translate(6px, 0) rotate(22deg) scale(1.1, 0.9) skewX(-6deg);
-  }
-  .stage-2 .bi-bull {
-    opacity: 1;
-    transform: translate(-70px, 0);
-    animation: bi-gallop-through 0.44s linear;
-  }
-  @keyframes bi-gallop-through {
-    0% {
-      transform: translate(-28px, 0);
-    }
-    100% {
-      transform: translate(-70px, 0);
-    }
-  }
-  .stage-2 .bi-dust {
-    opacity: 1;
-    animation: bi-dust-puff 0.44s ease-out;
-  }
-  @keyframes bi-dust-puff {
-    0% {
-      opacity: 0;
-      transform: scale(0.6);
-      transform-origin: 50px 20px;
-    }
-    40% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.6) translate(-6px, -1px);
-      transform-origin: 50px 20px;
-    }
-  }
-
-  /* Stage 3 — flourish: bull gone, cape wobbles back to rest, letters fade in */
-  .stage-3 .bi-cape {
-    transform: translate(0, 0) rotate(0deg) scale(1, 1);
-    animation: bi-flourish 0.68s cubic-bezier(0.25, 1.4, 0.5, 1);
-  }
-  @keyframes bi-flourish {
-    0% {
-      transform: translate(6px, 0) rotate(22deg) scale(1.1, 0.9);
-    }
-    40% {
-      transform: translate(-2px, 0) rotate(-6deg) scale(1, 1.03);
-    }
-    70% {
-      transform: translate(0, 0) rotate(3deg) scale(1, 1);
-    }
-    100% {
-      transform: translate(0, 0) rotate(0deg) scale(1, 1);
-    }
-  }
-  .stage-3 .bi-bull {
-    opacity: 0;
-    transform: translate(-88px, 0);
-  }
-  .stage-3 .bi-ch {
-    animation: bi-letter-in 0.36s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-  }
-  @keyframes bi-letter-in {
-    from {
-      opacity: 0;
-      transform: translateY(3px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Stage 4 — rest: lock in final state */
-  .stage-4 .bi-cape {
-    transform: none;
-  }
-  .stage-4 .bi-bull {
-    opacity: 0;
-    transform: translate(28px, 0);
-  }
-  .stage-4 .bi-dust {
-    opacity: 0;
-  }
-  .stage-4 .bi-ch {
-    opacity: 1;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .brand-intro *,
-    .bi-cape,
-    .bi-bull,
-    .bi-dust,
-    .bi-ch {
-      animation: none !important;
-      transition: none !important;
-    }
-    .bi-cape {
-      transform: none !important;
-    }
-    .bi-bull,
-    .bi-dust {
-      opacity: 0 !important;
-    }
-    .bi-ch {
-      opacity: 1 !important;
-    }
-  }
+}
 </style>

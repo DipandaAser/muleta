@@ -1,0 +1,9 @@
+# Prettier is scoped to *.svelte only (via the script globs in package.json
+# and the override in .prettierrc.json). Biome handles everything else.
+node_modules
+.svelte-kit
+build
+dist
+.turbo
+coverage
+pnpm-lock.yaml

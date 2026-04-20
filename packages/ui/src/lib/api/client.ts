@@ -11,5 +11,23 @@ export const api = hc<Handler>(baseUrl)
 
 // Derived response types — single source of truth for what the API returns.
 // Keeps components from hand-typing shapes that drift out of sync with the server.
-export type ListQueuesResponse = InferResponseType<typeof api.api.v1.queues.$get>
+export type ListQueuesResponse = InferResponseType<typeof api.api.v1.queues.$get, 200>
 export type Queue = ListQueuesResponse["queues"][number]
+
+export type ListJobsResponse = InferResponseType<
+  (typeof api.api.v1.queues)[":name"]["jobs"]["$get"],
+  200
+>
+export type Job = ListJobsResponse["jobs"][number]
+
+export type JobState = Job["state"]
+
+export const JOB_STATES: readonly JobState[] = [
+  "waiting",
+  "active",
+  "completed",
+  "failed",
+  "delayed",
+  "paused",
+  "prioritized",
+] as const
