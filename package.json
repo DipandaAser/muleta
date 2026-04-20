@@ -5,7 +5,7 @@
   "description": "Open-source BullMQ dashboard and toolkit.",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.22.0",
   "scripts": {

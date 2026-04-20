@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20-slim
+FROM node:24-slim
 
 # Corepack activates the pnpm version pinned in package.json
 RUN corepack enable
