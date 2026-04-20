@@ -100,7 +100,7 @@ describe("QueueRegistry", () => {
     const b = await producer.add("send", { to: "b@b" })
     const c = await producer.add("send", { to: "c@b" })
 
-    const result = await muleta.queues.getJobs("emails", { state: "waiting" })
+    const result = await muleta.queues.getJobs("emails", { states: ["waiting"] })
     expect(result.total).toBe(3)
     expect(result.jobs).toHaveLength(3)
     // newest first — c, b, a
@@ -113,12 +113,16 @@ describe("QueueRegistry", () => {
     for (let i = 0; i < 5; i++) {
       await producer.add("send", { i })
     }
-    const page1 = await muleta.queues.getJobs("emails", { state: "waiting", start: 0, end: 1 })
+    const page1 = await muleta.queues.getJobs("emails", {
+      states: ["waiting"],
+      start: 0,
+      end: 1,
+    })
     expect(page1.jobs).toHaveLength(2)
     expect(page1.total).toBe(5)
 
     const ascendingFirst = await muleta.queues.getJobs("emails", {
-      state: "waiting",
+      states: ["waiting"],
       start: 0,
       end: 0,
       asc: true,
@@ -127,8 +131,20 @@ describe("QueueRegistry", () => {
   })
 
   it("getJobs() returns empty when no jobs in that state", async () => {
-    const result = await muleta.queues.getJobs("emails", { state: "failed" })
+    const result = await muleta.queues.getJobs("emails", { states: ["failed"] })
     expect(result.jobs).toEqual([])
     expect(result.total).toBe(0)
+  })
+
+  it("getJobs() can filter across multiple states at once", async () => {
+    await producer.add("send", { to: "w1" })
+    await producer.add("send", { to: "w2" })
+    await producer.add("send", { to: "later" }, { delay: 60_000 })
+
+    const mixed = await muleta.queues.getJobs("emails", {
+      states: ["waiting", "delayed"],
+    })
+    expect(mixed.total).toBe(3)
+    expect(mixed.jobs.map((j) => j.state).sort()).toEqual(["delayed", "waiting", "waiting"])
   })
 })

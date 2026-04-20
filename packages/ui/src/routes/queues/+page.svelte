@@ -140,12 +140,7 @@ let isStale = $derived(error !== null && queues.length > 0)
         <button type="button" class="btn btn-sm btn-ghost" disabled>
           <Search size={13} /> Filter
         </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost"
-          onclick={load}
-          disabled={loading}
-        >
+        <button type="button" class="btn btn-sm btn-ghost" onclick={load} disabled={loading}>
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
@@ -157,27 +152,18 @@ let isStale = $derived(error !== null && queues.length > 0)
     >
       {#each STATES as s (s)}
         <div class="bg-base-100 p-4 flex flex-col gap-1.5">
-          <div
-            class="flex items-center gap-1.5 text-[11px] text-base-content/60 tracking-wide"
-          >
-            <span
-              class="w-1.5 h-1.5 rounded-full"
-              style:background={STATE_COLOR[s]}
-            ></span>
+          <div class="flex items-center gap-1.5 text-[11px] text-base-content/60 tracking-wide">
+            <span class="w-1.5 h-1.5 rounded-full" style:background={STATE_COLOR[s]}></span>
             {s}
           </div>
-          <div
-            class="font-mono-muleta tnum text-[22px] font-medium leading-none"
-          >
+          <div class="font-mono-muleta tnum text-[22px] font-medium leading-none">
             {#if loading && !isStale}
               <span class="skeleton h-5 w-10"></span>
             {:else}
               {numStr(totals[s])}
             {/if}
           </div>
-          <div class="font-mono-muleta text-[10.5px] text-base-content/50 tnum">
-            —
-          </div>
+          <div class="font-mono-muleta text-[10.5px] text-base-content/50 tnum">—</div>
         </div>
       {/each}
     </div>
@@ -213,9 +199,7 @@ let isStale = $derived(error !== null && queues.length > 0)
         {/each}
       {:else if sorted.length === 0 && !error}
         <div class="p-10 text-center text-base-content/60">
-          No queues registered. Set <code class="font-mono-muleta"
-            >MULETA_QUEUES</code
-          > on the server.
+          No queues registered. Set <code class="font-mono-muleta">MULETA_QUEUES</code> on the server.
         </div>
       {:else}
         {#each sorted as q (q.name)}
@@ -226,9 +210,7 @@ let isStale = $derived(error !== null && queues.length > 0)
           >
             <div class="flex flex-col gap-0.5 min-w-0">
               <div class="font-medium flex items-center gap-2">
-                <span class={q.isPaused ? "text-base-content/60" : ""}
-                  >{q.displayName}</span
-                >
+                <span class={q.isPaused ? "text-base-content/60" : ""}>{q.displayName}</span>
                 {#if q.isPaused}
                   <span
                     class="badge badge-sm"
@@ -255,9 +237,7 @@ let isStale = $derived(error !== null && queues.length > 0)
               class="font-mono-muleta tnum text-right {q.counts.active === 0
                 ? 'text-base-content/30'
                 : ''}"
-              style:color={q.counts.active > 0
-                ? "var(--color-info)"
-                : undefined}
+              style:color={q.counts.active > 0 ? "var(--color-info)" : undefined}
             >
               {numStr(q.counts.active)}
             </div>
@@ -272,9 +252,7 @@ let isStale = $derived(error !== null && queues.length > 0)
               class="font-mono-muleta tnum text-right {q.counts.failed === 0
                 ? 'text-base-content/30'
                 : ''}"
-              style:color={q.counts.failed > 0
-                ? "var(--color-error)"
-                : undefined}
+              style:color={q.counts.failed > 0 ? "var(--color-error)" : undefined}
             >
               {numStr(q.counts.failed)}
             </div>
@@ -286,24 +264,20 @@ let isStale = $derived(error !== null && queues.length > 0)
               {numStr(q.counts.paused)}
             </div>
             <div
-              class="font-mono-muleta tnum text-right {q.counts.prioritized ===
-              0
+              class="font-mono-muleta tnum text-right {q.counts.prioritized === 0
                 ? 'text-base-content/30'
                 : ''}"
             >
               {numStr(q.counts.prioritized)}
             </div>
-            <div class="font-mono-muleta tnum text-right text-base-content/30">
-              —
-            </div>
+            <div class="font-mono-muleta tnum text-right text-base-content/30">—</div>
           </a>
         {/each}
       {/if}
     </div>
 
     <p class="text-[11px] text-base-content/40 mt-4">
-      Throughput columns are blank until the metrics-retention plugin is
-      installed.
+      Throughput columns are blank until the metrics-retention plugin is installed.
     </p>
   </div>
 </div>

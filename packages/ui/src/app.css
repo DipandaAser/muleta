@@ -6,7 +6,7 @@
   themes:
     muleta-dark --default --prefersdark,
     muleta-light;
-  logs: true;
+  logs: false;
 }
 
 /* ---------- muleta-dark ---------- */
@@ -42,8 +42,8 @@
   --color-error: oklch(66% 0.18 20);
   --color-error-content: oklch(98% 0.01 20);
 
-  --radius-selector: 0.375rem;
-  --radius-field: 0.375rem;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
   --radius-box: 0.5rem;
 
   --size-selector: 0.25rem;

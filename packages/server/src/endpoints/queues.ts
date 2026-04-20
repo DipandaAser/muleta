@@ -37,6 +37,33 @@ export const getQueueRoute = createRoute({
   },
 })
 
+/**
+ * `state` accepts either one state or a comma-separated list:
+ *   ?state=failed
+ *   ?state=waiting,active,failed
+ * Split here so callers can filter by multiple states without repeated params.
+ */
+const StateListQuerySchema = z.string().transform((raw, ctx) => {
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+  if (parts.length === 0) {
+    ctx.addIssue({ code: "custom", message: "state must not be empty" })
+    return z.NEVER
+  }
+  const parsed: Array<z.infer<typeof JobStateSchema>> = []
+  for (const p of parts) {
+    const r = JobStateSchema.safeParse(p)
+    if (!r.success) {
+      ctx.addIssue({ code: "custom", message: `invalid state: ${p}` })
+      return z.NEVER
+    }
+    parsed.push(r.data)
+  }
+  return parsed
+})
+
 export const listJobsRoute = createRoute({
   method: "get",
   path: "/{name}/jobs",
@@ -46,7 +73,7 @@ export const listJobsRoute = createRoute({
       name: z.string().min(1),
     }),
     query: z.object({
-      state: JobStateSchema,
+      state: StateListQuerySchema,
       limit: z.coerce.number().int().min(1).max(100).optional().default(20),
       offset: z.coerce.number().int().min(0).optional().default(0),
       asc: z.coerce.boolean().optional().default(false),
@@ -54,7 +81,7 @@ export const listJobsRoute = createRoute({
   },
   responses: {
     200: {
-      description: "Page of jobs in the given state, newest-first by default.",
+      description: "Page of jobs in the given state(s), newest-first by default.",
       content: { "application/json": { schema: ListJobsResponseSchema } },
     },
     404: { description: "Queue is not registered." },
@@ -80,9 +107,9 @@ export function createQueuesApp(muleta: Muleta) {
       if (!muleta.queues.has(name)) {
         return c.json({ error: "queue not registered" }, 404)
       }
-      const { state, limit, offset, asc } = c.req.valid("query")
+      const { state: states, limit, offset, asc } = c.req.valid("query")
       const result = await muleta.queues.getJobs(name, {
-        state,
+        states,
         start: offset,
         end: offset + limit - 1,
         asc,

@@ -1,70 +1,44 @@
 <script lang="ts">
 import type { JobState } from "$lib/api/client"
-import { ArrowUp, Check, Clock, Pause, Play, X } from "@lucide/svelte"
+import { Check, Clock, Crown, Pause, Play, X } from "@lucide/svelte"
 import type { Component } from "svelte"
 
 interface Props {
   state: JobState
-  /** Drop the icon (e.g. when used inside a filter chip that already has a dot). */
-  iconless?: boolean
 }
 
-let { state, iconless = false }: Props = $props()
+let { state }: Props = $props()
 
-const PALETTE: Record<JobState, { fg: string; bg: string; icon: Component }> = {
-  waiting: {
-    fg: "var(--color-state-waiting)",
-    bg: "color-mix(in oklab, var(--color-state-waiting) 15%, transparent)",
-    icon: Clock,
-  },
-  active: {
-    fg: "var(--color-info)",
-    bg: "color-mix(in oklab, var(--color-info) 15%, transparent)",
-    icon: Play,
-  },
-  completed: {
-    fg: "var(--color-success)",
-    bg: "color-mix(in oklab, var(--color-success) 15%, transparent)",
-    icon: Check,
-  },
-  failed: {
-    fg: "var(--color-error)",
-    bg: "color-mix(in oklab, var(--color-error) 15%, transparent)",
-    icon: X,
-  },
-  delayed: {
-    fg: "var(--color-warning)",
-    bg: "color-mix(in oklab, var(--color-warning) 15%, transparent)",
-    icon: Clock,
-  },
-  paused: {
-    fg: "var(--color-state-paused)",
-    bg: "var(--color-state-paused-bg)",
-    icon: Pause,
-  },
-  prioritized: {
-    fg: "var(--color-state-prioritized)",
-    bg: "var(--color-state-prioritized-bg)",
-    icon: ArrowUp,
-  },
+/**
+ * Maps BullMQ states to daisyUI's semantic badge colors (using the `soft`
+ * variant for dark bg + saturated fg). States outside daisyUI's palette
+ * (`waiting`, `paused`, `prioritized`) get custom CSS vars from our theme,
+ * because `badge-neutral` collapses to near-base-100 on dark mode.
+ */
+function stateStyle(varName: string): string {
+  return `color: var(--color-state-${varName}); background: var(--color-state-${varName}-bg); border-color: color-mix(in oklab, var(--color-state-${varName}) 25%, transparent);`
+}
+
+const CONFIG: Record<JobState, { classes: string; style: string; icon: Component }> = {
+  waiting: { classes: "", style: stateStyle("waiting"), icon: Clock },
+  active: { classes: "badge-info badge-soft", style: "", icon: Play },
+  completed: { classes: "badge-success badge-soft", style: "", icon: Check },
+  failed: { classes: "badge-error badge-soft", style: "", icon: X },
+  delayed: { classes: "badge-warning badge-soft", style: "", icon: Clock },
+  paused: { classes: "", style: stateStyle("paused"), icon: Pause },
+  prioritized: { classes: "", style: stateStyle("prioritized"), icon: Crown },
   "waiting-children": {
-    fg: "var(--color-state-waiting)",
-    bg: "color-mix(in oklab, var(--color-state-waiting) 15%, transparent)",
+    classes: "",
+    style: stateStyle("waiting"),
     icon: Clock,
   },
 }
 
-let palette = $derived(PALETTE[state])
-let Ico = $derived(palette.icon)
+let cfg = $derived(CONFIG[state])
+let Ico = $derived(cfg.icon)
 </script>
 
-<span
-  class="font-mono-muleta text-[10.5px] px-1.5 py-0.5 rounded leading-none inline-flex items-center gap-1"
-  style:color={palette.fg}
-  style:background={palette.bg}
->
-  {#if !iconless}
-    <Ico size={10} />
-  {/if}
+<span class="badge badge-md font-mono-muleta gap-1 {cfg.classes}" style={cfg.style}>
+  <Ico size={10} />
   {state}
 </span>

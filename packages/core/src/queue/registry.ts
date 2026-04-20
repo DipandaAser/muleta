@@ -25,7 +25,10 @@ export interface InternalQueueRegistry extends QueueRegistry {
   close(): Promise<void>
 }
 
-function jobToInfo(job: Job, state: JobState): JobInfo {
+async function jobToInfo(job: Job): Promise<JobInfo> {
+  // Multi-state queries mix jobs from several lists, so the authoritative
+  // state has to come from Redis. Cheap per-job lookup but N+1 over the page.
+  const state = (await job.getState()) as JobState
   return {
     id: String(job.id),
     name: job.name,
@@ -114,14 +117,14 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
       const asc = opts.asc ?? false
 
       const [rawJobs, counts] = await Promise.all([
-        queue.getJobs([opts.state], start, end, asc),
-        queue.getJobCounts(opts.state),
+        queue.getJobs(opts.states, start, end, asc),
+        queue.getJobCounts(...opts.states),
       ])
 
-      const jobs = rawJobs
-        .filter((j): j is Job => j !== undefined)
-        .map((j) => jobToInfo(j, opts.state))
-      const total = counts[opts.state] ?? 0
+      const jobs = await Promise.all(
+        rawJobs.filter((j): j is Job => j !== undefined).map(jobToInfo),
+      )
+      const total = Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0)
 
       return { jobs, total } satisfies GetJobsResult
     },

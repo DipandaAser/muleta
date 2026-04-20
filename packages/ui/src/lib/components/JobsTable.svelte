@@ -71,126 +71,122 @@ function progressPct(p: Job["progress"]): number {
   if (p <= 1) return p * 100
   return Math.min(100, p)
 }
-
-const COLS = "24px 96px minmax(140px, 1fr) minmax(160px, 2fr) 70px 80px 90px 76px 96px 28px"
 </script>
 
-<div class="bg-base-100 border border-base-300 rounded-lg overflow-hidden">
-  <div
-    class="grid items-center px-4 h-8 text-base-content/60 text-[10.5px] font-medium uppercase tracking-wider border-b border-base-300"
-    style:grid-template-columns={COLS}
-  >
-    <div></div>
-    <div>State</div>
-    <div>Name</div>
-    <div>Data preview</div>
-    <div class="text-right">Attempts</div>
-    <div class="text-right">Duration</div>
-    <div>Progress</div>
-    <div class="text-right">Added</div>
-    <div class="text-right">ID</div>
-    <div></div>
-  </div>
-
-  {#if loading && jobs.length === 0}
-    {#each Array(5) as _, i (i)}
-      <div
-        class="grid items-center px-4 h-10 border-b border-base-300 last:border-b-0"
-        style:grid-template-columns={COLS}
-      >
-        <span class="skeleton h-3 w-3"></span>
-        <span class="skeleton h-4 w-16"></span>
-        <span class="skeleton h-3 w-32"></span>
-        <span class="skeleton h-3 w-40"></span>
-        <span class="skeleton h-3 w-8 ml-auto"></span>
-        <span class="skeleton h-3 w-12 ml-auto"></span>
-        <span class="skeleton h-1.5 w-full"></span>
-        <span class="skeleton h-3 w-10 ml-auto"></span>
-        <span class="skeleton h-3 w-14 ml-auto"></span>
-        <span></span>
-      </div>
-    {/each}
-  {:else if jobs.length === 0}
-    <div class="p-10 text-center text-base-content/60 text-[13px]">No jobs in this state.</div>
-  {:else}
-    {#each jobs as j (j.id)}
-      <div
-        class="grid items-center px-4 h-10 text-[12.5px] border-b border-base-300 last:border-b-0 hover:bg-base-200/60 group"
-        style:grid-template-columns={COLS}
-      >
-        <!-- bulk-select checkbox; disabled until we have bulk actions -->
-        <input
-          type="checkbox"
-          class="checkbox checkbox-xs"
-          disabled
-          aria-label="Select job"
-        />
-
-        <StateBadge state={j.state} />
-
-        <div class="font-medium truncate">{j.name}</div>
-
-        <div class="font-mono-muleta text-[11px] text-base-content/70 truncate">
-          {dataPreview(j.data)}
-        </div>
-
-        <div
-          class="font-mono-muleta tnum text-right text-[11.5px] {j.attemptsMade >= j.attempts &&
-          j.state === 'failed'
-            ? 'text-error'
-            : 'text-base-content/70'}"
-        >
-          {j.attemptsMade}/{j.attempts}
-        </div>
-
-        <div class="font-mono-muleta tnum text-right text-base-content/70 text-[11px]">
-          {#if j.processedAt && j.finishedAt}
-            {duration(j.processedAt, j.finishedAt)}
-          {:else if j.state === "active" && j.processedAt}
-            {duration(j.processedAt, Date.now())}
-          {:else}
-            <span class="text-base-content/30">—</span>
-          {/if}
-        </div>
-
-        <div class="flex items-center gap-2 min-w-0">
-          {#if j.state === "active" || (typeof j.progress === "number" && j.progress > 0)}
-            <div class="relative h-1 flex-1 rounded-full bg-base-300 overflow-hidden">
-              <div
-                class="absolute inset-y-0 left-0 rounded-full"
-                style:width="{progressPct(j.progress)}%"
-                style:background={j.state === "active" ? "var(--color-info)" : "var(--color-success)"}
-              ></div>
-            </div>
-            {#if progressStr(j.progress)}
-              <span
-                class="font-mono-muleta tnum text-[10.5px] text-base-content/60 shrink-0 w-7 text-right"
+<div class="overflow-x-auto rounded-lg border border-base-300 bg-base-100">
+  <table class="table table-sm">
+    <thead>
+      <tr class="text-base-content/60 text-[10.5px] uppercase tracking-wider">
+        <th class="w-6"></th>
+        <th class="w-24">State</th>
+        <th>Name</th>
+        <th>Data preview</th>
+        <th class="text-right w-17.5">Attempts</th>
+        <th class="text-right w-20">Duration</th>
+        <th class="w-22.5">Progress</th>
+        <th class="text-right w-19">Added</th>
+        <th class="text-right w-24">ID</th>
+        <th class="w-7"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {#if loading && jobs.length === 0}
+        {#each Array(5) as _, i (i)}
+          <tr>
+            <td><span class="skeleton h-3 w-3 block"></span></td>
+            <td><span class="skeleton h-4 w-16 block"></span></td>
+            <td><span class="skeleton h-3 w-32 block"></span></td>
+            <td><span class="skeleton h-3 w-40 block"></span></td>
+            <td><span class="skeleton h-3 w-8 ml-auto block"></span></td>
+            <td><span class="skeleton h-3 w-12 ml-auto block"></span></td>
+            <td><span class="skeleton h-1.5 w-full block"></span></td>
+            <td><span class="skeleton h-3 w-10 ml-auto block"></span></td>
+            <td><span class="skeleton h-3 w-14 ml-auto block"></span></td>
+            <td></td>
+          </tr>
+        {/each}
+      {:else if jobs.length === 0}
+        <tr>
+          <td colspan="10" class="p-10 text-center text-base-content/60 text-[13px]">
+            No jobs in this state.
+          </td>
+        </tr>
+      {:else}
+        {#each jobs as j (j.id)}
+          <tr class="hover:bg-base-200/60 group text-[12.5px]">
+            <td>
+              <input
+                type="checkbox"
+                class="checkbox checkbox-xs"
+                disabled
+                aria-label="Select job"
+              />
+            </td>
+            <td><StateBadge state={j.state} /></td>
+            <td class="font-medium truncate">{j.name}</td>
+            <td class="font-mono-muleta text-[11px] text-base-content/70 truncate">
+              {dataPreview(j.data)}
+            </td>
+            <td
+              class="font-mono-muleta tnum text-right text-[11.5px] {j.attemptsMade >= j.attempts &&
+              j.state === 'failed'
+                ? 'text-error'
+                : 'text-base-content/70'}"
+            >
+              {j.attemptsMade}/{j.attempts}
+            </td>
+            <td class="font-mono-muleta tnum text-right text-base-content/70 text-[11px]">
+              {#if j.processedAt && j.finishedAt}
+                {duration(j.processedAt, j.finishedAt)}
+              {:else if j.state === "active" && j.processedAt}
+                {duration(j.processedAt, Date.now())}
+              {:else}
+                <span class="text-base-content/30">—</span>
+              {/if}
+            </td>
+            <td>
+              <div class="flex items-center gap-2 min-w-0">
+                {#if j.state === "active" || (typeof j.progress === "number" && j.progress > 0)}
+                  <div class="relative h-1 flex-1 rounded-full bg-base-300 overflow-hidden">
+                    <div
+                      class="absolute inset-y-0 left-0 rounded-full"
+                      style:width="{progressPct(j.progress)}%"
+                      style:background={j.state === "active"
+                        ? "var(--color-info)"
+                        : "var(--color-success)"}
+                    ></div>
+                  </div>
+                  {#if progressStr(j.progress)}
+                    <span
+                      class="font-mono-muleta tnum text-[10.5px] text-base-content/60 shrink-0 w-7 text-right"
+                    >
+                      {progressStr(j.progress)}
+                    </span>
+                  {/if}
+                {:else}
+                  <span class="text-base-content/30">—</span>
+                {/if}
+              </div>
+            </td>
+            <td class="font-mono-muleta tnum text-right text-[11px] text-base-content/70">
+              {age(j.addedAt)}
+            </td>
+            <td class="font-mono-muleta tnum text-right text-[11px] text-base-content/60 truncate">
+              {j.id}
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-ghost btn-square btn-xs text-base-content/40 opacity-0 group-hover:opacity-100"
+                aria-label="Job actions"
+                disabled
               >
-                {progressStr(j.progress)}
-              </span>
-            {/if}
-          {:else}
-            <span class="text-base-content/30">—</span>
-          {/if}
-        </div>
-
-        <div class="font-mono-muleta tnum text-right text-[11px] text-base-content/70">
-          {age(j.addedAt)}
-        </div>
-
-        <div class="font-mono-muleta tnum text-right text-[11px] text-base-content/60 truncate">
-          {j.id}
-        </div>
-
-        <button
-          type="button"
-          class="btn btn-ghost btn-square btn-xs text-base-content/40 opacity-0 group-hover:opacity-100"
-          aria-label="Job actions"
-          disabled
-        >
-          <MoreHorizontal size={12} />
-        </button>
-      </div>
-    {/each}
-  {/if}
+                <MoreHorizontal size={12} />
+              </button>
+            </td>
+          </tr>
+        {/each}
+      {/if}
+    </tbody>
+  </table>
 </div>

@@ -63,7 +63,7 @@ export interface JobInfo {
 }
 
 export interface GetJobsOptions {
-  state: JobState
+  states: JobState[]
   /** Inclusive start index into the state's list. Default 0. */
   start?: number
   /** Exclusive end index. Default 19 (i.e. 20-item page). */
