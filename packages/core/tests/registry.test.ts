@@ -81,4 +81,54 @@ describe("QueueRegistry", () => {
   it("throws when registering a duplicate queue name", () => {
     expect(() => muleta.queues.register({ name: "emails" })).toThrowError(/already registered/)
   })
+
+  it("get() returns a single queue's info", async () => {
+    const info = await muleta.queues.get("emails")
+    expect(info).toMatchObject({
+      name: "emails",
+      displayName: "Email Delivery",
+      isPaused: false,
+    })
+  })
+
+  it("get() throws for unregistered queues", async () => {
+    await expect(muleta.queues.get("ghost")).rejects.toThrowError(/not registered/)
+  })
+
+  it("getJobs() returns jobs in the requested state, newest first", async () => {
+    const a = await producer.add("send", { to: "a@b" })
+    const b = await producer.add("send", { to: "b@b" })
+    const c = await producer.add("send", { to: "c@b" })
+
+    const result = await muleta.queues.getJobs("emails", { state: "waiting" })
+    expect(result.total).toBe(3)
+    expect(result.jobs).toHaveLength(3)
+    // newest first — c, b, a
+    expect(result.jobs.map((j) => j.id)).toEqual([c.id, b.id, a.id])
+    expect(result.jobs[0]).toMatchObject({ name: "send", state: "waiting" })
+    expect(result.jobs[0]?.data).toEqual({ to: "c@b" })
+  })
+
+  it("getJobs() paginates via start/end and respects asc order", async () => {
+    for (let i = 0; i < 5; i++) {
+      await producer.add("send", { i })
+    }
+    const page1 = await muleta.queues.getJobs("emails", { state: "waiting", start: 0, end: 1 })
+    expect(page1.jobs).toHaveLength(2)
+    expect(page1.total).toBe(5)
+
+    const ascendingFirst = await muleta.queues.getJobs("emails", {
+      state: "waiting",
+      start: 0,
+      end: 0,
+      asc: true,
+    })
+    expect(ascendingFirst.jobs[0]?.data).toEqual({ i: 0 })
+  })
+
+  it("getJobs() returns empty when no jobs in that state", async () => {
+    const result = await muleta.queues.getJobs("emails", { state: "failed" })
+    expect(result.jobs).toEqual([])
+    expect(result.total).toBe(0)
+  })
 })

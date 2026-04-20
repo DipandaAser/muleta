@@ -219,7 +219,8 @@ let isStale = $derived(error !== null && queues.length > 0)
         </div>
       {:else}
         {#each sorted as q (q.name)}
-          <div
+          <a
+            href="/queues/{q.name}"
             class="grid items-center px-6 h-12 text-[12.5px] border-b border-base-300 last:border-b-0 hover:bg-base-200/60"
             style="grid-template-columns: 2fr 56px repeat(6, 64px) 120px;"
           >
@@ -295,7 +296,7 @@ let isStale = $derived(error !== null && queues.length > 0)
             <div class="font-mono-muleta tnum text-right text-base-content/30">
               —
             </div>
-          </div>
+          </a>
         {/each}
       {/if}
     </div>

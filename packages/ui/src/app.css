@@ -6,7 +6,7 @@
   themes:
     muleta-dark --default --prefersdark,
     muleta-light;
-  logs: false;
+  logs: true;
 }
 
 /* ---------- muleta-dark ---------- */

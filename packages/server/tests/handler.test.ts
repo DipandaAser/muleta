@@ -92,4 +92,41 @@ describe("createHandler", () => {
     const body = await res.json()
     expect(body.queues[0]?.counts.waiting).toBe(1)
   })
+
+  it("GET /api/v1/queues/:name returns a single queue", async () => {
+    const handler = createHandler({ endpoints: createEndpoints(muleta) })
+    const res = await handler.request("/api/v1/queues/emails")
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { name: string; displayName: string }
+    expect(body).toMatchObject({ name: "emails", displayName: "Email Delivery" })
+  })
+
+  it("GET /api/v1/queues/:name returns 404 for unregistered queues", async () => {
+    const handler = createHandler({ endpoints: createEndpoints(muleta) })
+    const res = await handler.request("/api/v1/queues/ghost")
+    expect(res.status).toBe(404)
+  })
+
+  it("GET /api/v1/queues/:name/jobs returns a page of jobs", async () => {
+    await producer.add("send", { to: "a@b" })
+    await producer.add("send", { to: "b@b" })
+    await producer.add("send", { to: "c@b" })
+
+    const handler = createHandler({ endpoints: createEndpoints(muleta) })
+    const res = await handler.request("/api/v1/queues/emails/jobs?state=waiting&limit=2")
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      jobs: Array<{ id: string; name: string; state: string; data: unknown }>
+      total: number
+    }
+    expect(body.total).toBe(3)
+    expect(body.jobs).toHaveLength(2)
+    expect(body.jobs[0]).toMatchObject({ name: "send", state: "waiting" })
+  })
+
+  it("GET /api/v1/queues/:name/jobs rejects invalid state", async () => {
+    const handler = createHandler({ endpoints: createEndpoints(muleta) })
+    const res = await handler.request("/api/v1/queues/emails/jobs?state=nonsense")
+    expect(res.status).toBe(400)
+  })
 })
