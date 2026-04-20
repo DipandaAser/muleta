@@ -14,6 +14,7 @@
     "@hono/node-server": "^1.19.14",
     "@muleta/core": "workspace:*",
     "@muleta/server": "workspace:*",
+    "@muleta/ui": "workspace:*",
     "bullmq": "^5.74.1",
     "hono": "^4.12.14",
     "ioredis": "^5.10.1",

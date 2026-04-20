@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".svelte-kit/**"]
+      "outputs": ["dist/**", "build/**", ".svelte-kit/**"]
     },
     "typecheck": {
       "dependsOn": ["^build"],
@@ -19,7 +19,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["MULETA_*"]
     }
   }
 }

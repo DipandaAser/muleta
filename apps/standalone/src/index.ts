@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs"
 import { serve } from "@hono/node-server"
 import { createMuleta, type QueueConfig } from "@muleta/core"
 import { createEndpoints, createHandler } from "@muleta/server"
+import { buildPath as uiBuildPath } from "@muleta/ui/server"
 
 function die(message: string): never {
   console.error(`[muleta] ${message}`)
@@ -28,7 +30,16 @@ async function main() {
   const queues = parseQueues(process.env.MULETA_QUEUES)
 
   const muleta = await createMuleta({ redis: { url: redisUrl }, queues })
-  const app = createHandler({ endpoints: createEndpoints(muleta) })
+
+  const assets = existsSync(uiBuildPath) ? { path: uiBuildPath } : undefined
+  if (!assets) {
+    console.log("[muleta] UI build not found (run `pnpm -F @muleta/ui build`); serving API only.")
+  }
+
+  const app = createHandler({
+    endpoints: createEndpoints(muleta),
+    ...(assets ? { assets } : {}),
+  })
 
   const server = serve({ fetch: app.fetch, port }, (info) => {
     console.log(`[muleta] ready on http://localhost:${info.port}`)
