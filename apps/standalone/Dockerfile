@@ -11,6 +11,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY apps/standalone/package.json ./apps/standalone/
 COPY packages/core/package.json ./packages/core/
 COPY packages/server/package.json ./packages/server/
+COPY packages/ui/package.json ./packages/ui/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
@@ -18,6 +19,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # Source after deps so code changes don't invalidate the install layer
 COPY packages/ ./packages/
 COPY apps/standalone/ ./apps/standalone/
+
+# Build the SvelteKit SPA — standalone reads packages/ui/build at runtime
+RUN pnpm --filter @muleta/ui build
 
 ENV NODE_ENV=production
 EXPOSE 3737

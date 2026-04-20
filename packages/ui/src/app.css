@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@plugin "daisyui" {
+  themes:
+    muleta-dark --default --prefersdark,
+    muleta-light;
+  logs: false;
+}
+
+/* ---------- muleta-dark ---------- */
+@plugin "daisyui/theme" {
+  name: "muleta-dark";
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: oklch(13% 0.005 285);
+  --color-base-200: oklch(16% 0.005 285);
+  --color-base-300: oklch(20% 0.005 285);
+  --color-base-content: oklch(94% 0.005 285);
+
+  --color-primary: oklch(58% 0.19 25);
+  --color-primary-content: oklch(98% 0.005 25);
+
+  --color-secondary: oklch(65% 0.02 285);
+  --color-secondary-content: oklch(15% 0.005 285);
+
+  --color-accent: oklch(58% 0.19 25);
+  --color-accent-content: oklch(98% 0.005 25);
+
+  --color-neutral: oklch(20% 0.005 285);
+  --color-neutral-content: oklch(85% 0.005 285);
+
+  --color-info: oklch(68% 0.15 255);
+  --color-info-content: oklch(15% 0.02 255);
+  --color-success: oklch(75% 0.16 150);
+  --color-success-content: oklch(15% 0.03 150);
+  --color-warning: oklch(78% 0.13 85);
+  --color-warning-content: oklch(15% 0.03 85);
+  --color-error: oklch(66% 0.18 20);
+  --color-error-content: oklch(98% 0.01 20);
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ---------- muleta-light ---------- */
+@plugin "daisyui/theme" {
+  name: "muleta-light";
+  color-scheme: light;
+
+  --color-base-100: oklch(98% 0.003 85);
+  --color-base-200: oklch(95% 0.003 85);
+  --color-base-300: oklch(92% 0.003 85);
+  --color-base-content: oklch(18% 0.005 285);
+
+  --color-primary: oklch(55% 0.19 25);
+  --color-primary-content: oklch(98% 0.005 25);
+
+  --color-secondary: oklch(45% 0.02 285);
+  --color-secondary-content: oklch(98% 0.005 285);
+
+  --color-accent: oklch(55% 0.19 25);
+  --color-accent-content: oklch(98% 0.005 25);
+
+  --color-neutral: oklch(92% 0.003 85);
+  --color-neutral-content: oklch(25% 0.005 285);
+
+  --color-info: oklch(55% 0.15 255);
+  --color-info-content: oklch(98% 0.02 255);
+  --color-success: oklch(50% 0.16 150);
+  --color-success-content: oklch(98% 0.03 150);
+  --color-warning: oklch(60% 0.13 85);
+  --color-warning-content: oklch(98% 0.03 85);
+  --color-error: oklch(55% 0.18 20);
+  --color-error-content: oklch(98% 0.01 20);
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+}
+
+/*
+ * BullMQ has 7 job states; daisyUI has 4 semantic status colors.
+ * Three extras (waiting / paused / prioritized) live as custom properties
+ * so <StateBadge state="paused"> resolves to a themed color pair.
+ */
+@layer base {
+  :root {
+    --font-sans:
+      "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono:
+      "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  }
+
+  [data-theme="muleta-dark"] {
+    --color-state-waiting: oklch(75% 0.03 260);
+    --color-state-waiting-bg: oklch(25% 0.04 260);
+    --color-state-paused: oklch(72% 0.12 295);
+    --color-state-paused-bg: oklch(24% 0.06 295);
+    --color-state-prioritized: oklch(75% 0.15 340);
+    --color-state-prioritized-bg: oklch(24% 0.08 340);
+  }
+
+  [data-theme="muleta-light"] {
+    --color-state-waiting: oklch(40% 0.04 260);
+    --color-state-waiting-bg: oklch(93% 0.02 260);
+    --color-state-paused: oklch(45% 0.13 295);
+    --color-state-paused-bg: oklch(94% 0.04 295);
+    --color-state-prioritized: oklch(48% 0.15 340);
+    --color-state-prioritized-bg: oklch(94% 0.05 340);
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.4;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .font-mono-muleta {
+    font-family: var(--font-mono);
+    font-feature-settings: "zero", "ss02";
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Skeleton shimmer: pairs with the design's loading-states.html. Implies
+     "data is arriving soon"; do not use while disconnected (looks like a lie). */
+  .skeleton {
+    display: inline-block;
+    border-radius: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--color-base-200) 0%,
+      var(--color-base-300) 50%,
+      var(--color-base-200) 100%
+    );
+    background-size: 200% 100%;
+    animation: muleta-shimmer 1.6s ease-in-out infinite;
+  }
+  @keyframes muleta-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+    }
+  }
+}

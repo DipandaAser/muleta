@@ -6,3 +6,5 @@ packages:
   - "sdks/*"
   - "demos/*"
   - "demos/shared/*"
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'

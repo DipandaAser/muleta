@@ -9,6 +9,7 @@
   },
   "packageManager": "pnpm@10.22.0",
   "scripts": {
+    "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
