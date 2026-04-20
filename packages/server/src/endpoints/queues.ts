@@ -1,10 +1,10 @@
-import { createRoute, type OpenAPIHono } from "@hono/zod-openapi"
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
 import type { Muleta } from "@muleta/core"
 import { ListQueuesResponseSchema } from "../schemas.js"
 
 export const listQueuesRoute = createRoute({
   method: "get",
-  path: "/queues",
+  path: "/",
   tags: ["Queues"],
   responses: {
     200: {
@@ -16,8 +16,8 @@ export const listQueuesRoute = createRoute({
   },
 })
 
-export function mountQueueEndpoints(app: OpenAPIHono, muleta: Muleta) {
-  app.openapi(listQueuesRoute, async (c) => {
+export function createQueuesApp(muleta: Muleta) {
+  return new OpenAPIHono().openapi(listQueuesRoute, async (c) => {
     const queues = await muleta.queues.list()
     return c.json({ queues }, 200)
   })
