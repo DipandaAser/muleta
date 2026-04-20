@@ -1,18 +1,12 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import type { Endpoints } from "./endpoints/index.js"
+import type { createEndpoints } from "./endpoints/index.js"
 
 export interface CreateHandlerOptions {
-  endpoints: Endpoints
+  endpoints: ReturnType<typeof createEndpoints>
 }
 
-export type Handler = OpenAPIHono
-
-export function createHandler(opts: CreateHandlerOptions): Handler {
-  const app = new OpenAPIHono()
-  const api = new OpenAPIHono()
-
-  opts.endpoints(api)
-  app.route("/api/v1", api)
-
-  return app
+export function createHandler(opts: CreateHandlerOptions) {
+  return new OpenAPIHono().route("/api/v1", opts.endpoints)
 }
+
+export type Handler = ReturnType<typeof createHandler>
