@@ -1,0 +1,26 @@
+{
+  "name": "@muleta/standalone",
+  "version": "0.0.0",
+  "description": "Standalone muleta binary — reads env, binds a port, serves the API.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.14",
+    "@muleta/core": "workspace:*",
+    "@muleta/server": "workspace:*",
+    "bullmq": "^5.74.1",
+    "hono": "^4.12.14",
+    "ioredis": "^5.10.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0"
+  }
+}
