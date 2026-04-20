@@ -25,6 +25,9 @@
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "peerDependencies": {
     "hono": "^4",
     "zod": "^4"

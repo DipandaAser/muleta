@@ -25,6 +25,9 @@
     "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "peerDependencies": {
     "bullmq": "^5",
     "ioredis": "^5"
