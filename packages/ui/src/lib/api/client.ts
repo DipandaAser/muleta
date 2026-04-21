@@ -20,6 +20,11 @@ export type ListJobsResponse = InferResponseType<
 >
 export type Job = ListJobsResponse["jobs"][number]
 
+export type JobDetail = InferResponseType<
+  (typeof api.api.v1.queues)[":name"]["jobs"][":id"]["$get"],
+  200
+>
+
 export type JobState = Job["state"]
 
 export const JOB_STATES: readonly JobState[] = [

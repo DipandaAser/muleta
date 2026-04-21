@@ -1,13 +1,16 @@
 import { type Job, Queue } from "bullmq"
 import type { Redis } from "ioredis"
-import type {
-  GetJobsResult,
-  JobInfo,
-  JobState,
-  QueueConfig,
-  QueueCounts,
-  QueueInfo,
-  QueueRegistry,
+import {
+  type GetJobsResult,
+  InvalidJobStateError,
+  type JobDetail,
+  type JobInfo,
+  JobNotFoundError,
+  type JobState,
+  type QueueConfig,
+  type QueueCounts,
+  type QueueInfo,
+  type QueueRegistry,
 } from "../types.js"
 
 const COUNTED_STATES = [
@@ -48,6 +51,13 @@ async function jobToInfo(job: Job): Promise<JobInfo> {
 export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
   const configs = new Map<string, QueueConfig>()
   const queues = new Map<string, Queue>()
+
+  async function requireJob(name: string, id: string): Promise<Job> {
+    const { queue } = getOrCreate(name)
+    const job = await queue.getJob(id)
+    if (!job) throw new JobNotFoundError(name, id)
+    return job
+  }
 
   function getOrCreate(name: string): { queue: Queue; cfg: QueueConfig } {
     const cfg = configs.get(name)
@@ -127,6 +137,47 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
       const total = Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0)
 
       return { jobs, total } satisfies GetJobsResult
+    },
+
+    async getJob(name, id) {
+      const { queue } = getOrCreate(name)
+      const job = await queue.getJob(id)
+      if (!job) return null
+      const info = await jobToInfo(job)
+      // BullMQ returns the log list already ordered oldest→newest; keep that.
+      const { logs } = await queue.getJobLogs(id, 0, -1, true)
+      return {
+        ...info,
+        returnvalue: job.returnvalue,
+        stacktrace: job.stacktrace ?? [],
+        delay: job.opts.delay ?? 0,
+        priority: job.opts.priority ?? 0,
+        opts: { ...job.opts } as Record<string, unknown>,
+        logs,
+      } satisfies JobDetail
+    },
+
+    async retryJob(name, id) {
+      const job = await requireJob(name, id)
+      const state = (await job.getState()) as JobState
+      if (state !== "failed") {
+        throw new InvalidJobStateError("retry", state, ["failed"])
+      }
+      await job.retry()
+    },
+
+    async removeJob(name, id) {
+      const job = await requireJob(name, id)
+      await job.remove()
+    },
+
+    async promoteJob(name, id) {
+      const job = await requireJob(name, id)
+      const state = (await job.getState()) as JobState
+      if (state !== "delayed") {
+        throw new InvalidJobStateError("promote", state, ["delayed"])
+      }
+      await job.promote()
     },
 
     async close() {

@@ -1,6 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import type { Muleta } from "@muleta/core"
+import { InvalidJobStateError, JobNotFoundError, type Muleta } from "@muleta/core"
 import {
+  ErrorResponseSchema,
+  JobDetailSchema,
   JobStateSchema,
   ListJobsResponseSchema,
   ListQueuesResponseSchema,
@@ -88,6 +90,78 @@ export const listJobsRoute = createRoute({
   },
 })
 
+const jobParamsSchema = z.object({
+  name: z.string().min(1),
+  id: z.string().min(1),
+})
+
+export const getJobRoute = createRoute({
+  method: "get",
+  path: "/{name}/jobs/{id}",
+  tags: ["Jobs"],
+  request: { params: jobParamsSchema },
+  responses: {
+    200: {
+      description: "Full job detail including opts, stacktrace, return value, logs.",
+      content: { "application/json": { schema: JobDetailSchema } },
+    },
+    404: {
+      description: "Queue isn't registered or job doesn't exist.",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+  },
+})
+
+export const deleteJobRoute = createRoute({
+  method: "delete",
+  path: "/{name}/jobs/{id}",
+  tags: ["Jobs"],
+  request: { params: jobParamsSchema },
+  responses: {
+    204: { description: "Job removed." },
+    404: {
+      description: "Queue isn't registered or job doesn't exist.",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+  },
+})
+
+export const retryJobRoute = createRoute({
+  method: "post",
+  path: "/{name}/jobs/{id}/retry",
+  tags: ["Jobs"],
+  request: { params: jobParamsSchema },
+  responses: {
+    204: { description: "Job requeued." },
+    400: {
+      description: "Job isn't in a state that allows retry (must be failed).",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: "Queue isn't registered or job doesn't exist.",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+  },
+})
+
+export const promoteJobRoute = createRoute({
+  method: "post",
+  path: "/{name}/jobs/{id}/promote",
+  tags: ["Jobs"],
+  request: { params: jobParamsSchema },
+  responses: {
+    204: { description: "Job promoted to wait list." },
+    400: {
+      description: "Job isn't in a state that allows promotion (must be delayed).",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    404: {
+      description: "Queue isn't registered or job doesn't exist.",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+  },
+})
+
 export function createQueuesApp(muleta: Muleta) {
   return new OpenAPIHono()
     .openapi(listQueuesRoute, async (c) => {
@@ -115,5 +189,55 @@ export function createQueuesApp(muleta: Muleta) {
         asc,
       })
       return c.json(result, 200)
+    })
+    .openapi(getJobRoute, async (c) => {
+      const { name, id } = c.req.valid("param")
+      if (!muleta.queues.has(name)) {
+        return c.json({ error: "queue not registered" }, 404)
+      }
+      const detail = await muleta.queues.getJob(name, id)
+      if (!detail) return c.json({ error: "job not found" }, 404)
+      return c.json(detail, 200)
+    })
+    .openapi(deleteJobRoute, async (c) => {
+      const { name, id } = c.req.valid("param")
+      if (!muleta.queues.has(name)) {
+        return c.json({ error: "queue not registered" }, 404)
+      }
+      try {
+        await muleta.queues.removeJob(name, id)
+      } catch (err) {
+        if (err instanceof JobNotFoundError) return c.json({ error: "job not found" }, 404)
+        throw err
+      }
+      return c.body(null, 204)
+    })
+    .openapi(retryJobRoute, async (c) => {
+      const { name, id } = c.req.valid("param")
+      if (!muleta.queues.has(name)) {
+        return c.json({ error: "queue not registered" }, 404)
+      }
+      try {
+        await muleta.queues.retryJob(name, id)
+      } catch (err) {
+        if (err instanceof JobNotFoundError) return c.json({ error: "job not found" }, 404)
+        if (err instanceof InvalidJobStateError) return c.json({ error: err.message }, 400)
+        throw err
+      }
+      return c.body(null, 204)
+    })
+    .openapi(promoteJobRoute, async (c) => {
+      const { name, id } = c.req.valid("param")
+      if (!muleta.queues.has(name)) {
+        return c.json({ error: "queue not registered" }, 404)
+      }
+      try {
+        await muleta.queues.promoteJob(name, id)
+      } catch (err) {
+        if (err instanceof JobNotFoundError) return c.json({ error: "job not found" }, 404)
+        if (err instanceof InvalidJobStateError) return c.json({ error: err.message }, 400)
+        throw err
+      }
+      return c.body(null, 204)
     })
 }

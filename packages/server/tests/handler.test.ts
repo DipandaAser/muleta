@@ -129,4 +129,94 @@ describe("createHandler", () => {
     const res = await handler.request("/api/v1/queues/emails/jobs?state=nonsense")
     expect(res.status).toBe(400)
   })
+
+  describe("job detail + actions", () => {
+    it("GET /api/v1/queues/:name/jobs/:id returns full detail", async () => {
+      const added = await producer.add("send", { to: "a@b" }, { attempts: 2 })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request(`/api/v1/queues/emails/jobs/${added.id}`)
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        id: string
+        name: string
+        data: unknown
+        attempts: number
+        stacktrace: string[]
+        opts: Record<string, unknown>
+      }
+      expect(body).toMatchObject({
+        id: String(added.id),
+        name: "send",
+        data: { to: "a@b" },
+        attempts: 2,
+        stacktrace: [],
+      })
+      expect(body.opts).toMatchObject({ attempts: 2 })
+    })
+
+    it("GET /api/v1/queues/:name/jobs/:id returns 404 for unknown job", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/jobs/does-not-exist")
+      expect(res.status).toBe(404)
+    })
+
+    it("GET /api/v1/queues/:name/jobs/:id returns 404 for unregistered queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/ghost/jobs/1")
+      expect(res.status).toBe(404)
+    })
+
+    it("DELETE /api/v1/queues/:name/jobs/:id removes the job", async () => {
+      const added = await producer.add("send", { to: "doomed" })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request(`/api/v1/queues/emails/jobs/${added.id}`, {
+        method: "DELETE",
+      })
+      expect(res.status).toBe(204)
+
+      const after = await muleta.queues.getJob("emails", String(added.id))
+      expect(after).toBeNull()
+    })
+
+    it("DELETE returns 404 for unknown job", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/jobs/nope", { method: "DELETE" })
+      expect(res.status).toBe(404)
+    })
+
+    it("POST retry returns 400 when job isn't failed", async () => {
+      const added = await producer.add("send", { to: "still-waiting" })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request(`/api/v1/queues/emails/jobs/${added.id}/retry`, {
+        method: "POST",
+      })
+      expect(res.status).toBe(400)
+    })
+
+    it("POST promote moves a delayed job to waiting", async () => {
+      const added = await producer.add("send", { to: "later" }, { delay: 60_000 })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request(`/api/v1/queues/emails/jobs/${added.id}/promote`, {
+        method: "POST",
+      })
+      expect(res.status).toBe(204)
+
+      const after = await muleta.queues.getJob("emails", String(added.id))
+      expect(after?.state).toBe("waiting")
+    })
+
+    it("POST promote returns 400 when job isn't delayed", async () => {
+      const added = await producer.add("send", { to: "immediate" })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request(`/api/v1/queues/emails/jobs/${added.id}/promote`, {
+        method: "POST",
+      })
+      expect(res.status).toBe(400)
+    })
+  })
 })
