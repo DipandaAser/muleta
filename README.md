@@ -2,6 +2,8 @@
 
 Open-source BullMQ dashboard and toolkit.
 
+<img src="muleta-cover.png" alt="Open-source BullMQ dashboard" >
+
 > Status: very early. The repository is being scaffolded.
 
 ## Requirements
