@@ -1,5 +1,5 @@
-import { browser } from "$app/environment"
 import { getContext, setContext } from "svelte"
+import { browser } from "$app/environment"
 import type { HealthStatus } from "./client"
 
 export interface HealthSubscription {
