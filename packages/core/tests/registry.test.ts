@@ -148,6 +148,24 @@ describe("QueueRegistry", () => {
     expect(mixed.jobs.map((j) => j.state).sort()).toEqual(["delayed", "waiting", "waiting"])
   })
 
+  describe("health", () => {
+    it("returns a ready status with ping + info when Redis is reachable", async () => {
+      const h = await muleta.health()
+
+      expect(h.timestamp).toBeGreaterThan(0)
+      expect(h.uptimeSeconds).toBeGreaterThanOrEqual(0)
+      expect(h.redis.status).toBe("ready")
+      expect(h.redis.connected).toBe(true)
+      expect(h.redis.pingMs).not.toBeNull()
+      expect(h.redis.pingMs).toBeGreaterThanOrEqual(0)
+      expect(h.redis.address).toMatch(/:\d+$/)
+      expect(h.redis.info).toBeDefined()
+      expect(h.redis.info?.version).toMatch(/^\d+\.\d+\.\d+/)
+      expect(h.redis.info?.connectedClients).toBeGreaterThan(0)
+      expect(h.redis.info?.memoryUsedBytes).toBeGreaterThan(0)
+    })
+  })
+
   describe("job detail + actions", () => {
     it("getJob() returns a full detail payload including opts and logs", async () => {
       const added = await producer.add(

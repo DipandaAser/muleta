@@ -219,4 +219,56 @@ describe("createHandler", () => {
       expect(res.status).toBe(400)
     })
   })
+
+  describe("health", () => {
+    it("GET /api/v1/health returns a snapshot", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/health")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        timestamp: number
+        uptimeSeconds: number
+        redis: {
+          status: string
+          connected: boolean
+          pingMs: number | null
+          address: string
+          info?: { version: string }
+        }
+      }
+      expect(body.redis.connected).toBe(true)
+      expect(body.redis.status).toBe("ready")
+      expect(body.redis.info?.version).toMatch(/^\d+\./)
+    })
+
+    it("GET /api/v1/health/events streams SSE health frames", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const controller = new AbortController()
+      const res = await handler.request("/api/v1/health/events?interval=500", {
+        signal: controller.signal,
+      })
+      expect(res.status).toBe(200)
+      expect(res.headers.get("content-type")).toMatch(/^text\/event-stream/)
+
+      const reader = res.body?.getReader()
+      expect(reader).toBeDefined()
+      if (!reader) return
+
+      // Read until we have at least one full SSE frame (two blank lines end it).
+      const decoder = new TextDecoder()
+      let buffer = ""
+      const deadline = Date.now() + 5_000
+      while (!buffer.includes("\n\n") && Date.now() < deadline) {
+        const { value, done } = await reader.read()
+        if (done) break
+        if (value) buffer += decoder.decode(value, { stream: true })
+      }
+
+      expect(buffer).toContain("event: health")
+      expect(buffer).toContain("data:")
+
+      controller.abort()
+      await reader.cancel().catch(() => {})
+    })
+  })
 })
