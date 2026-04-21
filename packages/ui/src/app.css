@@ -9,42 +9,58 @@
   logs: false;
 }
 
-/* ---------- muleta-dark ---------- */
+/* ============================================================
+   muleta-dark
+   ============================================================
+   Surface tiers climb in small steps (bg → bg-4):
+     #0a0a0b → #0f0f11 → #151518 → #1c1c21 → #232329
+   Text tiers drop in ~30pt steps (fg → fg-4):
+     #ededef → #c9c9cf → #8b8b92 → #5c5c64 → #3a3a40
+   daisyUI has 3 surface slots; extras live as --color-* custom props.
+   ============================================================ */
 @plugin "daisyui/theme" {
   name: "muleta-dark";
   default: true;
   prefersdark: true;
   color-scheme: dark;
 
-  --color-base-100: oklch(13% 0.005 285);
-  --color-base-200: oklch(16% 0.005 285);
-  --color-base-300: oklch(20% 0.005 285);
-  --color-base-content: oklch(94% 0.005 285);
+  /* base-100 = canvas, base-200 = raised surface (inputs, cards),
+     base-300 = border tone. Extra tiers exposed via custom props
+     in @layer base below. */
+  --color-base-100: #0a0a0b;
+  --color-base-200: #151518;
+  --color-base-300: #232328;
+  --color-base-content: #ededef;
 
-  --color-primary: oklch(58% 0.19 25);
-  --color-primary-content: oklch(98% 0.005 25);
+  /* Muleta red — oklch(0.58 0.19 25). Active tab underline, primary CTAs,
+     brand mark. Matches [data-accent="muleta"] in the design. */
+  --color-primary: oklch(0.58 0.19 25);
+  --color-primary-content: oklch(0.98 0.005 25);
 
-  --color-secondary: oklch(65% 0.02 285);
-  --color-secondary-content: oklch(15% 0.005 285);
+  --color-secondary: #c9c9cf;
+  --color-secondary-content: #0a0a0b;
 
-  --color-accent: oklch(58% 0.19 25);
-  --color-accent-content: oklch(98% 0.005 25);
+  --color-accent: oklch(0.58 0.19 25);
+  --color-accent-content: oklch(0.98 0.005 25);
 
-  --color-neutral: oklch(20% 0.005 285);
-  --color-neutral-content: oklch(85% 0.005 285);
+  --color-neutral: #232328;
+  --color-neutral-content: #ededef;
 
-  --color-info: oklch(68% 0.15 255);
-  --color-info-content: oklch(15% 0.02 255);
-  --color-success: oklch(75% 0.16 150);
-  --color-success-content: oklch(15% 0.03 150);
-  --color-warning: oklch(78% 0.13 85);
-  --color-warning-content: oklch(15% 0.03 85);
-  --color-error: oklch(66% 0.18 20);
-  --color-error-content: oklch(98% 0.01 20);
+  /* BullMQ semantic status — FG + BG pairs mirror the design's
+     --st-*-fg / --st-*-bg. daisyUI only has 4 slots; three more
+     (waiting/paused/prioritized) live as custom props below. */
+  --color-info: #6ea9ff;
+  --color-info-content: #101f38;
+  --color-success: #3ecf8e;
+  --color-success-content: #0d2219;
+  --color-warning: #d8a74a;
+  --color-warning-content: #2a1f0b;
+  --color-error: #ff6b7a;
+  --color-error-content: #2a1015;
 
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
+  --radius-selector: 0.1875rem; /* 3px — matches --r-1 */
+  --radius-field: 0.3125rem; /* 5px — matches --r-2 */
+  --radius-box: 0.4375rem; /* 7px — matches --r-3 */
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -54,71 +70,171 @@
   --noise: 0;
 }
 
-/* ---------- muleta-light ---------- */
+/* ============================================================
+   muleta-light
+   ============================================================
+   Warm off-white canvas with #ffffff as the raised surface. Matches
+   styles.css [data-theme="light"] exactly.
+   ============================================================ */
 @plugin "daisyui/theme" {
   name: "muleta-light";
   color-scheme: light;
 
-  --color-base-100: oklch(98% 0.003 85);
-  --color-base-200: oklch(95% 0.003 85);
-  --color-base-300: oklch(92% 0.003 85);
-  --color-base-content: oklch(18% 0.005 285);
+  --color-base-100: #fafaf8; /* canvas */
+  --color-base-200: #ffffff; /* raised — inputs, cards */
+  --color-base-300: #e3e3dd; /* border tone */
+  --color-base-content: #1a1a1c;
 
-  --color-primary: oklch(55% 0.19 25);
-  --color-primary-content: oklch(98% 0.005 25);
+  --color-primary: oklch(0.58 0.19 25);
+  --color-primary-content: oklch(0.98 0.005 25);
 
-  --color-secondary: oklch(45% 0.02 285);
-  --color-secondary-content: oklch(98% 0.005 285);
+  --color-secondary: #3a3a3e;
+  --color-secondary-content: #ffffff;
 
-  --color-accent: oklch(55% 0.19 25);
-  --color-accent-content: oklch(98% 0.005 25);
+  --color-accent: oklch(0.58 0.19 25);
+  --color-accent-content: oklch(0.98 0.005 25);
 
-  --color-neutral: oklch(92% 0.003 85);
-  --color-neutral-content: oklch(25% 0.005 285);
+  --color-neutral: #e1e1dc;
+  --color-neutral-content: #1a1a1c;
 
-  --color-info: oklch(55% 0.15 255);
-  --color-info-content: oklch(98% 0.02 255);
-  --color-success: oklch(50% 0.16 150);
-  --color-success-content: oklch(98% 0.03 150);
-  --color-warning: oklch(60% 0.13 85);
-  --color-warning-content: oklch(98% 0.03 85);
-  --color-error: oklch(55% 0.18 20);
-  --color-error-content: oklch(98% 0.01 20);
+  /* Status FGs are tuned dark-on-light to match styles.css --st-*-fg. */
+  --color-info: #1e5fc4;
+  --color-info-content: #e1ecff;
+  --color-success: #0f7a4a;
+  --color-success-content: #dff5e9;
+  --color-warning: #8a6614;
+  --color-warning-content: #fbefd0;
+  --color-error: #b6202f;
+  --color-error-content: #fce1e4;
 
-  --radius-selector: 0.375rem;
-  --radius-field: 0.375rem;
-  --radius-box: 0.5rem;
+  --radius-selector: 0.1875rem;
+  --radius-field: 0.3125rem;
+  --radius-box: 0.4375rem;
 }
 
-/*
- * BullMQ has 7 job states; daisyUI has 4 semantic status colors.
- * Three extras (waiting / paused / prioritized) live as custom properties
- * so <StateBadge state="paused"> resolves to a themed color pair.
- */
+/* ============================================================
+   Shared design tokens + extra surface/text/state tiers
+   ============================================================
+   daisyUI's 3 surface + 1 text slot can't express the design's full
+   scale. These custom props fill the gap so components can hit any
+   tier (e.g. --color-bg-3 for cards, --color-fg-2 for muted copy).
+   Use Tailwind arbitrary values: bg-[var(--color-bg-3)] / text-[var(--color-fg-2)].
+   ============================================================ */
 @layer base {
   :root {
     --font-sans:
       "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --font-mono:
       "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+    /* Spacing scale — matches styles.css --s-0..--s-10. */
+    --s-0: 0;
+    --s-1: 2px;
+    --s-2: 4px;
+    --s-3: 6px;
+    --s-4: 8px;
+    --s-5: 12px;
+    --s-6: 16px;
+    --s-7: 20px;
+    --s-8: 24px;
+    --s-9: 32px;
+    --s-10: 48px;
+
+    /* Radii — matches styles.css --r-1..--r-4. */
+    --r-1: 3px;
+    --r-2: 5px;
+    --r-3: 7px;
+    --r-4: 10px;
+
+    /* Density — flip --row-h/--row-px via [data-density="comfortable"]. */
+    --row-h: 32px;
+    --row-px: 12px;
+  }
+
+  [data-density="comfortable"] {
+    --row-h: 40px;
+    --row-px: 16px;
   }
 
   [data-theme="muleta-dark"] {
-    --color-state-waiting: oklch(75% 0.03 260);
-    --color-state-waiting-bg: oklch(25% 0.04 260);
-    --color-state-paused: oklch(72% 0.12 295);
-    --color-state-paused-bg: oklch(24% 0.06 295);
-    --color-state-prioritized: oklch(75% 0.15 340);
-    --color-state-prioritized-bg: oklch(24% 0.08 340);
+    /* Full surface tier ladder (daisyUI exposes 100/200/300 only). */
+    --color-bg: #0a0a0b; /* = base-100, canvas */
+    --color-bg-1: #0f0f11; /* sidebar, topbar */
+    --color-bg-2: #151518; /* = base-200, inputs */
+    --color-bg-3: #1c1c21; /* cards, code blocks */
+    --color-bg-4: #232329; /* selected rows */
+    --color-bg-hover: #1a1a1f;
+    --color-bg-select: #23232b;
+
+    /* Sidebar-specific (design uses its own shade — not base-200). */
+    --color-sidebar-bg: #0f0f11;
+    --color-sidebar-border: #232328;
+
+    /* Full text tier ladder. */
+    --color-fg: #ededef; /* = base-content, primary text */
+    --color-fg-1: #c9c9cf; /* secondary labels */
+    --color-fg-2: #8b8b92; /* muted copy */
+    --color-fg-3: #5c5c64; /* disabled / hint */
+    --color-fg-4: #3a3a40; /* placeholder on dark surface */
+
+    /* Border tiers — base-300 is the default, -2/-3 escalate. */
+    --color-border: #232328;
+    --color-border-2: #2d2d34;
+    --color-border-3: #3a3a42;
+
+    /* Shadows (elevation levels). */
+    --shadow-1: 0 1px 0 0 rgba(255, 255, 255, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 0 0 rgba(255, 255, 255, 0.03) inset;
+    --shadow-drawer: -16px 0 48px rgba(0, 0, 0, 0.55);
+
+    /* BullMQ extra states (waiting/paused/prioritized aren't in daisyUI). */
+    --color-state-waiting: #a8b2c4;
+    --color-state-waiting-bg: #1c2130;
+    --color-state-paused: #9c8de0;
+    --color-state-paused-bg: #1d1830;
+    --color-state-prioritized: #e88cc8;
+    --color-state-prioritized-bg: #2a1425;
+
+    /* Accent alpha tints (for hover bgs, focus rings). */
+    --color-accent-bg: oklch(0.58 0.19 25 / 0.14);
+    --color-accent-border: oklch(0.58 0.19 25 / 0.35);
   }
 
   [data-theme="muleta-light"] {
-    --color-state-waiting: oklch(40% 0.04 260);
-    --color-state-waiting-bg: oklch(93% 0.02 260);
-    --color-state-paused: oklch(45% 0.13 295);
-    --color-state-paused-bg: oklch(94% 0.04 295);
-    --color-state-prioritized: oklch(48% 0.15 340);
-    --color-state-prioritized-bg: oklch(94% 0.05 340);
+    --color-bg: #fafaf8;
+    --color-bg-1: #ffffff;
+    --color-bg-2: #f4f4f1;
+    --color-bg-3: #ebebe7;
+    --color-bg-4: #e1e1dc;
+    --color-bg-hover: #efefeb;
+    --color-bg-select: #e6e6e0;
+
+    --color-sidebar-bg: #ffffff;
+    --color-sidebar-border: #e3e3dd;
+
+    --color-fg: #1a1a1c;
+    --color-fg-1: #3a3a3e;
+    --color-fg-2: #6b6b70;
+    --color-fg-3: #9a9a9f;
+    --color-fg-4: #c8c8cc;
+
+    --color-border: #e3e3dd;
+    --color-border-2: #d6d6cf;
+    --color-border-3: #bfbfb8;
+
+    --shadow-1: 0 1px 0 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(30, 30, 30, 0.04);
+    --shadow-2: 0 8px 32px rgba(30, 30, 30, 0.08), 0 1px 3px rgba(30, 30, 30, 0.06);
+    --shadow-drawer: -16px 0 48px rgba(30, 30, 30, 0.12);
+
+    --color-state-waiting: #4a5568;
+    --color-state-waiting-bg: #edeef1;
+    --color-state-paused: #5a3fb0;
+    --color-state-paused-bg: #ece7fa;
+    --color-state-prioritized: #a9348b;
+    --color-state-prioritized-bg: #fadcf0;
+
+    --color-accent-bg: oklch(0.58 0.19 25 / 0.1);
+    --color-accent-border: oklch(0.58 0.19 25 / 0.3);
   }
 
   html,
@@ -132,13 +248,60 @@
     font-family: var(--font-sans);
     font-size: 13px;
     line-height: 1.4;
+    /* ss01 + cv11 are the Geist stylistic sets muleta ships with. */
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  /* Native form controls inherit font (design doesn't want UA defaults). */
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: var(--color-accent-bg);
+    color: var(--color-base-content);
+  }
+
+  /* Thin neutral scrollbars — matches the dev-tool aesthetic. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-2) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-border-2);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-3);
+    background-clip: padding-box;
   }
 }
 
 @layer utilities {
+  /* Monospace with Geist Mono's zero-slash + ss02 on — matches the design. */
   .font-mono-muleta {
     font-family: var(--font-mono);
     font-feature-settings: "zero", "ss02";
@@ -147,8 +310,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Skeleton shimmer: pairs with the design's loading-states.html. Implies
-     "data is arriving soon"; do not use while disconnected (looks like a lie). */
+  /* Skeleton shimmer — matches loading-states.html behaviour.
+     Pairs with "data arriving soon". Do NOT use during disconnected
+     state (design treats shimmer-while-dead as a lie — show the amber
+     reconnecting banner instead). */
   .skeleton {
     display: inline-block;
     border-radius: 3px;

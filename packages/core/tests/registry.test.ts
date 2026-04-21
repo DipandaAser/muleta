@@ -1,9 +1,9 @@
-import { Queue } from "bullmq"
+import { Queue, Worker } from "bullmq"
 import { Redis } from "ioredis"
 import { GenericContainer, type StartedTestContainer } from "testcontainers"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import type { Muleta } from "../src/index.js"
-import { createMuleta } from "../src/index.js"
+import { createMuleta, InvalidJobStateError, JobNotFoundError } from "../src/index.js"
 
 describe("QueueRegistry", () => {
   let container: StartedTestContainer
@@ -146,5 +146,114 @@ describe("QueueRegistry", () => {
     })
     expect(mixed.total).toBe(3)
     expect(mixed.jobs.map((j) => j.state).sort()).toEqual(["delayed", "waiting", "waiting"])
+  })
+
+  describe("job detail + actions", () => {
+    it("getJob() returns a full detail payload including opts and logs", async () => {
+      const added = await producer.add(
+        "send",
+        { to: "a@b" },
+        { attempts: 3, priority: 5, delay: 0 },
+      )
+      // Drive a log entry through BullMQ's job-scoped log API.
+      await producer.client.then((c) => c) // ensure connection is ready
+      await added.log("starting processing")
+
+      const detail = await muleta.queues.getJob("emails", String(added.id))
+      expect(detail).not.toBeNull()
+      expect(detail).toMatchObject({
+        id: String(added.id),
+        name: "send",
+        // A job added with `priority` lands in the "prioritized" list
+        // rather than "waiting" — BullMQ stores them separately.
+        state: "prioritized",
+        data: { to: "a@b" },
+        attempts: 3,
+        priority: 5,
+        delay: 0,
+        stacktrace: [],
+        returnvalue: null,
+      })
+      expect(detail?.opts).toMatchObject({ attempts: 3, priority: 5 })
+      expect(detail?.logs).toContain("starting processing")
+    })
+
+    it("getJob() returns null for an unknown id", async () => {
+      const detail = await muleta.queues.getJob("emails", "does-not-exist")
+      expect(detail).toBeNull()
+    })
+
+    it("getJob() throws when the queue isn't registered", async () => {
+      await expect(muleta.queues.getJob("ghost", "1")).rejects.toThrowError(/not registered/)
+    })
+
+    it("removeJob() deletes the job from Redis", async () => {
+      const added = await producer.add("send", { to: "doomed" })
+      await muleta.queues.removeJob("emails", String(added.id))
+      const gone = await muleta.queues.getJob("emails", String(added.id))
+      expect(gone).toBeNull()
+    })
+
+    it("removeJob() throws JobNotFoundError for a missing id", async () => {
+      await expect(muleta.queues.removeJob("emails", "nope")).rejects.toBeInstanceOf(
+        JobNotFoundError,
+      )
+    })
+
+    it("retryJob() requeues a failed job", async () => {
+      const added = await producer.add("send", { to: "will-fail" }, { attempts: 1 })
+
+      // Spin up a worker that always fails so the job lands in "failed".
+      const worker = new Worker(
+        "emails",
+        async () => {
+          throw new Error("boom")
+        },
+        { connection: new Redis(redisUrl, { maxRetriesPerRequest: null }) },
+      )
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          worker.on("failed", (job) => {
+            if (job?.id === added.id) resolve()
+          })
+          setTimeout(() => reject(new Error("worker never failed the job")), 5_000)
+        })
+
+        // Pause the worker so retry() doesn't race us back into processing.
+        await worker.pause(true)
+
+        await muleta.queues.retryJob("emails", String(added.id))
+        const after = await muleta.queues.getJob("emails", String(added.id))
+        expect(after?.state).not.toBe("failed")
+      } finally {
+        await worker.close()
+      }
+    })
+
+    it("retryJob() throws InvalidJobStateError when the job isn't failed", async () => {
+      const added = await producer.add("send", { to: "still-waiting" })
+      await expect(muleta.queues.retryJob("emails", String(added.id))).rejects.toBeInstanceOf(
+        InvalidJobStateError,
+      )
+    })
+
+    it("promoteJob() moves a delayed job to waiting", async () => {
+      const added = await producer.add("send", { to: "later" }, { delay: 60_000 })
+      const before = await muleta.queues.getJob("emails", String(added.id))
+      expect(before?.state).toBe("delayed")
+
+      await muleta.queues.promoteJob("emails", String(added.id))
+
+      const after = await muleta.queues.getJob("emails", String(added.id))
+      expect(after?.state).toBe("waiting")
+    })
+
+    it("promoteJob() throws InvalidJobStateError when the job isn't delayed", async () => {
+      const added = await producer.add("send", { to: "immediate" })
+      await expect(muleta.queues.promoteJob("emails", String(added.id))).rejects.toBeInstanceOf(
+        InvalidJobStateError,
+      )
+    })
   })
 })

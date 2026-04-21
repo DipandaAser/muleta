@@ -66,3 +66,18 @@ export const ListJobsResponseSchema = z
     total: count,
   })
   .openapi("ListJobsResponse")
+
+export const JobDetailSchema = JobInfoSchema.extend({
+  returnvalue: z.unknown(),
+  stacktrace: z.array(z.string()),
+  delay: z.number().int().nonnegative(),
+  priority: z.number().int(),
+  opts: z.record(z.string(), z.unknown()),
+  logs: z.array(z.string()),
+}).openapi("JobDetail")
+
+export const ErrorResponseSchema = z
+  .object({
+    error: z.string(),
+  })
+  .openapi("ErrorResponse")
