@@ -25,6 +25,8 @@ export type JobDetail = InferResponseType<
   200
 >
 
+export type HealthStatus = InferResponseType<typeof api.api.v1.health.$get, 200>
+
 export type JobState = Job["state"]
 
 export const JOB_STATES: readonly JobState[] = [

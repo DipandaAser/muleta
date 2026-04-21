@@ -2,6 +2,7 @@ export { createMuleta } from "./muleta.js"
 export type {
   GetJobsOptions,
   GetJobsResult,
+  HealthStatus,
   JobDetail,
   JobInfo,
   JobProgress,
@@ -13,5 +14,7 @@ export type {
   QueueInfo,
   QueueRegistry,
   RedisConnectionOptions,
+  RedisConnectionStatus,
+  RedisHealth,
 } from "./types.js"
 export { InvalidJobStateError, JobNotFoundError } from "./types.js"
