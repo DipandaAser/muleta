@@ -18,6 +18,5 @@ services:
         condition: service_healthy
     environment:
       MULETA_REDIS_URL: redis://redis:6379
-      MULETA_QUEUES: emails,webhooks,reports
     ports:
       - "3737:3737"

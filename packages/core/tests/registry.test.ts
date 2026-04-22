@@ -4,6 +4,7 @@ import { GenericContainer, type StartedTestContainer } from "testcontainers"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import type { Muleta } from "../src/index.js"
 import { createMuleta, InvalidJobStateError, JobNotFoundError } from "../src/index.js"
+import { DEFAULT_BULLMQ_PREFIX, type InternalQueueRegistry } from "../src/queue/registry.js"
 
 describe("QueueRegistry", () => {
   let container: StartedTestContainer
@@ -273,5 +274,119 @@ describe("QueueRegistry", () => {
         InvalidJobStateError,
       )
     })
+  })
+})
+
+describe("queue autodiscovery", () => {
+  let container: StartedTestContainer
+  let redisUrl: string
+
+  beforeAll(async () => {
+    container = await new GenericContainer("redis:7-alpine").withExposedPorts(6379).start()
+    redisUrl = `redis://${container.getHost()}:${container.getMappedPort(6379)}`
+  })
+
+  afterAll(async () => {
+    await container.stop()
+  })
+
+  let muleta: Muleta | null = null
+  let producerConn: Redis | null = null
+  const seeded: Queue[] = []
+
+  async function seed(name: string, opts?: { prefix?: string }): Promise<Queue> {
+    if (!producerConn) {
+      producerConn = new Redis(redisUrl, { maxRetriesPerRequest: null })
+    }
+    const q = new Queue(name, {
+      connection: producerConn,
+      ...(opts?.prefix ? { prefix: opts.prefix } : {}),
+    })
+    await q.waitUntilReady()
+    // Forcing an add guarantees the :meta hash exists before discovery scans.
+    await q.add("seed", {})
+    seeded.push(q)
+    return q
+  }
+
+  afterEach(async () => {
+    for (const q of seeded) {
+      await q.obliterate({ force: true }).catch(() => {})
+      await q.close()
+    }
+    seeded.length = 0
+    if (producerConn) {
+      producerConn.disconnect()
+      producerConn = null
+    }
+    if (muleta) {
+      await muleta.close()
+      muleta = null
+    }
+  })
+
+  it("discovers queues present in Redis on startup", async () => {
+    await seed("orders")
+    await seed("reports")
+
+    muleta = await createMuleta({ redis: { url: redisUrl } })
+
+    const names = (await muleta.queues.list()).map((q) => q.name).sort()
+    expect(names).toEqual(["orders", "reports"])
+  })
+
+  it("picks up a queue that appears after startup on the next scan", async () => {
+    muleta = await createMuleta({ redis: { url: redisUrl } })
+    expect(await muleta.queues.list()).toEqual([])
+
+    await seed("late")
+
+    const internal = muleta.queues as InternalQueueRegistry
+    await internal.discover([DEFAULT_BULLMQ_PREFIX])
+
+    const names = (await muleta.queues.list()).map((q) => q.name)
+    expect(names).toContain("late")
+  })
+
+  it("unregisters a discovered queue after it is obliterated", async () => {
+    const transient = await seed("transient")
+
+    muleta = await createMuleta({ redis: { url: redisUrl } })
+    expect((await muleta.queues.list()).map((q) => q.name)).toContain("transient")
+
+    await transient.obliterate({ force: true })
+
+    const internal = muleta.queues as InternalQueueRegistry
+    await internal.discover([DEFAULT_BULLMQ_PREFIX])
+
+    expect((await muleta.queues.list()).map((q) => q.name)).not.toContain("transient")
+  })
+
+  it("keeps an explicit registration's displayName when the queue is also present in Redis", async () => {
+    await seed("audit")
+
+    muleta = await createMuleta({
+      redis: { url: redisUrl },
+      queues: [{ name: "audit", displayName: "Audit Log" }],
+    })
+
+    const info = await muleta.queues.get("audit")
+    expect(info.displayName).toBe("Audit Log")
+  })
+
+  it("discovers queues under a non-default prefix when it is declared via explicit config", async () => {
+    await seed("custom", { prefix: "myapp" })
+
+    // Declaring *any* queue with the custom prefix seeds the discovery prefix
+    // list — siblings under the same prefix get picked up for free.
+    await seed("sibling", { prefix: "myapp" })
+
+    muleta = await createMuleta({
+      redis: { url: redisUrl },
+      queues: [{ name: "custom", prefix: "myapp" }],
+    })
+
+    const names = (await muleta.queues.list()).map((q) => q.name).sort()
+    expect(names).toEqual(["custom", "sibling"])
   })
 })

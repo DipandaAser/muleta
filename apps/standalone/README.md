@@ -29,7 +29,6 @@ docker run --rm -p 6379:6379 redis:7-alpine
 
 # 2. Boot muleta (from the repo root)
 MULETA_REDIS_URL=redis://localhost:6379 \
-MULETA_QUEUES=emails,webhooks \
 pnpm -F @muleta/standalone dev
 
 # 3. Hit the API
@@ -42,7 +41,8 @@ curl http://localhost:3737/api/v1/queues
 | --- | --- | --- | --- |
 | `MULETA_REDIS_URL` | yes | — | `redis://[:password@]host:port[/db]` |
 | `MULETA_PORT` | no | `3737` | Port to bind |
-| `MULETA_QUEUES` | no | *(none)* | Comma-separated queue names to register; autodiscovery lands in a later change |
+
+Queues are auto-discovered from Redis — any BullMQ queue under the default `bull:` prefix shows up within 15 s. No registration step required.
 
 ## Shutdown
 
