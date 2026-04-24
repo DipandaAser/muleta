@@ -1,4 +1,7 @@
-import type { RedisOptions } from "ioredis"
+import type { JobType as BullMQJobType } from "bullmq"
+import type { Redis, RedisOptions } from "ioredis"
+
+type RedisStatus = Redis["status"]
 
 export type RedisConnectionOptions =
   | ({ url: string } & Omit<RedisOptions, "host" | "port">)
@@ -34,15 +37,18 @@ export interface QueueInfo {
   isPaused: boolean
 }
 
-export type JobState =
-  | "waiting"
-  | "active"
-  | "completed"
-  | "failed"
-  | "delayed"
-  | "paused"
-  | "prioritized"
-  | "waiting-children"
+export const JOB_STATES = [
+  "waiting",
+  "active",
+  "completed",
+  "failed",
+  "delayed",
+  "paused",
+  "prioritized",
+  "waiting-children",
+] as const satisfies readonly BullMQJobType[]
+
+export type JobState = (typeof JOB_STATES)[number]
 
 /** Matches BullMQ's `JobProgress` — a number, percentage object, or custom value. */
 export type JobProgress = number | string | boolean | object
@@ -141,21 +147,17 @@ export class JobNotFoundError extends Error {
   }
 }
 
-/**
- * Reachability + introspection snapshot for the Redis that backs muleta.
- * `status` mirrors ioredis's connection lifecycle; `ping` is measured around
- * a PING command (null when the socket isn't ready). The `info` fields are
- * a curated subset of Redis's INFO command — everything else is discarded
- * to keep this payload cheap to poll.
- */
-export type RedisConnectionStatus =
-  | "connecting"
-  | "connect"
-  | "ready"
-  | "reconnecting"
-  | "close"
-  | "end"
-  | "wait"
+export type RedisConnectionStatus = RedisStatus
+
+export const REDIS_CONNECTION_STATUSES = [
+  "connecting",
+  "connect",
+  "ready",
+  "reconnecting",
+  "close",
+  "end",
+  "wait",
+] as const satisfies readonly RedisConnectionStatus[]
 
 export interface RedisHealth {
   status: RedisConnectionStatus

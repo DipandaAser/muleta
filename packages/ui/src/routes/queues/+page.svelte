@@ -1,6 +1,10 @@
 <script lang="ts">
-	import { api, type Queue } from "$lib/api/client"
+	import { createQueuesSubscription } from "$lib/api/queues.svelte"
 	import { RefreshCw, Search, TriangleAlert } from "@lucide/svelte"
+	import { onDestroy } from "svelte"
+	import type { PageData } from "./$types"
+
+	let { data }: { data: PageData } = $props()
 
 	const JOB_STATES = [
 		"waiting",
@@ -24,35 +28,33 @@
 		prioritized: "var(--color-state-prioritized)",
 	}
 
-	let queues = $state<Queue[]>([])
-	let loading = $state(true)
-	let error = $state<string | null>(null)
-	let lastUpdated = $state<number | null>(null)
+	// Loader timestamp — used as `lastUpdated` until the first SSE frame arrives.
+	const loadedAt = Date.now()
+
+	const sub = createQueuesSubscription()
+	onDestroy(() => sub.close())
+
 	let now = $state(Date.now())
-
-	async function load() {
-		loading = true
-		error = null
-		try {
-			const res = await api.api.v1.queues.$get()
-			if (!res.ok) throw new Error(`HTTP ${res.status}`)
-			const body = await res.json()
-			queues = body.queues
-			lastUpdated = Date.now()
-		} catch (e) {
-			error = e instanceof Error ? e.message : "failed to load queues"
-		} finally {
-			loading = false
-		}
-	}
-
 	$effect(() => {
-		load()
 		const interval = setInterval(() => {
 			now = Date.now()
 		}, 1000)
 		return () => clearInterval(interval)
 	})
+
+	// Loader seeds the initial render; SSE takes over once the first frame lands.
+	let queues = $derived(sub.lastFrameAt !== null ? sub.queues : data.queues)
+	let lastUpdated = $derived(sub.lastFrameAt ?? (data.error ? null : loadedAt))
+
+	let error = $derived(
+		sub.connection === "closed"
+			? "live stream disconnected"
+			: sub.connection === "connecting" && sub.attempt > 0
+				? `reconnecting (attempt ${sub.attempt}/${sub.maxAttempts})`
+				: sub.lastFrameAt === null && data.error
+					? data.error
+					: null,
+	)
 
 	let totals = $derived.by(() => {
 		const t: Record<State, number> = {
@@ -111,7 +113,7 @@
 				class="ml-auto px-2 py-0.5 rounded text-[11px] border cursor-pointer hover:bg-base-300/20"
 				style:border-color="oklch(0.64 0.2 18 / 0.35)"
 				style:color="oklch(72% 0.17 20)"
-				onclick={load}
+				onclick={() => sub.reconnect()}
 			>
 				Retry
 			</button>
@@ -140,7 +142,7 @@
 				<button type="button" class="btn btn-sm btn-ghost" disabled>
 					<Search size={13} /> Filter
 				</button>
-				<button type="button" class="btn btn-sm btn-ghost" onclick={load} disabled={loading}>
+				<button type="button" class="btn btn-sm btn-ghost" onclick={() => sub.reconnect()}>
 					<RefreshCw size={13} /> Refresh
 				</button>
 			</div>
@@ -157,11 +159,7 @@
 						{s}
 					</div>
 					<div class="font-mono-muleta tnum text-[22px] font-medium leading-none">
-						{#if loading && !isStale}
-							<span class="skeleton h-5 w-10"></span>
-						{:else}
-							{numStr(totals[s])}
-						{/if}
+						{numStr(totals[s])}
 					</div>
 					<div class="font-mono-muleta text-[10.5px] text-base-content/50 tnum">—</div>
 				</div>
@@ -185,21 +183,10 @@
 				<div class="text-right">Throughput</div>
 			</div>
 
-			{#if loading && !isStale}
-				{#each Array(3) as _, i (i)}
-					<div
-						class="grid items-center px-6 h-12 border-b border-base-300 last:border-b-0"
-						style="grid-template-columns: 2fr 56px repeat(6, 64px) 120px;"
-					>
-						<span class="skeleton h-3 w-40"></span>
-						{#each Array(8) as _, j (j)}
-							<span class="skeleton h-3 w-8 ml-auto"></span>
-						{/each}
-					</div>
-				{/each}
-			{:else if sorted.length === 0 && !error}
+			{#if sorted.length === 0 && !error}
 				<div class="p-10 text-center text-base-content/60">
-					No queues registered. Set <code class="font-mono-muleta">MULETA_QUEUES</code> on the server.
+					No queues found in Redis yet. Discovery re-runs every 15 s — any BullMQ queue under the
+					<code class="font-mono-muleta">bull:</code> prefix will appear here automatically.
 				</div>
 			{:else}
 				{#each sorted as q (q.name)}

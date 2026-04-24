@@ -17,4 +17,4 @@ export type {
   RedisConnectionStatus,
   RedisHealth,
 } from "./types.js"
-export { InvalidJobStateError, JobNotFoundError } from "./types.js"
+export { InvalidJobStateError, JobNotFoundError, REDIS_CONNECTION_STATUSES } from "./types.js"

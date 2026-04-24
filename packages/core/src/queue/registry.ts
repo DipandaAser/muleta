@@ -25,8 +25,20 @@ const COUNTED_STATES = [
 ] as const
 
 export interface InternalQueueRegistry extends QueueRegistry {
+  /**
+   * Scan Redis for BullMQ queues under the given prefixes and reconcile the
+   * registry. Queues whose `<prefix>:<name>:meta` hash is present are
+   * registered as "discovered"; previously-discovered queues absent from the
+   * current pass are unregistered and their Queue instances closed. Explicit
+   * registrations are never evicted. Returns the names of all registered
+   * queues (explicit + discovered) after the pass.
+   */
+  discover(prefixes: string[]): Promise<string[]>
   close(): Promise<void>
 }
+
+/** BullMQ's default key prefix. */
+export const DEFAULT_BULLMQ_PREFIX = "bull"
 
 async function jobToInfo(job: Job): Promise<JobInfo> {
   // Multi-state queries mix jobs from several lists, so the authoritative
@@ -48,9 +60,25 @@ async function jobToInfo(job: Job): Promise<JobInfo> {
   }
 }
 
+type Source = "explicit" | "discovered"
+
 export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
   const configs = new Map<string, QueueConfig>()
+  const sources = new Map<string, Source>()
   const queues = new Map<string, Queue>()
+
+  async function closeQueue(name: string): Promise<void> {
+    const q = queues.get(name)
+    if (q) {
+      queues.delete(name)
+      await q.close()
+    }
+  }
+
+  function registerInternal(config: QueueConfig, source: Source): void {
+    configs.set(config.name, { ...config })
+    sources.set(config.name, source)
+  }
 
   async function requireJob(name: string, id: string): Promise<Job> {
     const { queue } = getOrCreate(name)
@@ -100,10 +128,43 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
 
   return {
     register(config) {
-      if (configs.has(config.name)) {
+      const existing = sources.get(config.name)
+      if (existing === "explicit") {
         throw new Error(`Queue "${config.name}" is already registered`)
       }
-      configs.set(config.name, { ...config })
+      // Upgrading a discovered registration to explicit keeps the existing
+      // Queue instance (prefix is identical) and just replaces the config.
+      registerInternal(config, "explicit")
+    },
+
+    async discover(prefixes) {
+      const seen = new Set<string>()
+      const uniquePrefixes = Array.from(new Set(prefixes))
+
+      for (const prefix of uniquePrefixes) {
+        await scanPrefix(redis, prefix, (name) => {
+          seen.add(name)
+          if (!configs.has(name)) {
+            registerInternal(
+              { name, ...(prefix !== DEFAULT_BULLMQ_PREFIX ? { prefix } : {}) },
+              "discovered",
+            )
+          }
+        })
+      }
+
+      // Evict discovered queues that no longer exist in Redis.
+      const toEvict: string[] = []
+      for (const [name, source] of sources) {
+        if (source === "discovered" && !seen.has(name)) toEvict.push(name)
+      }
+      for (const name of toEvict) {
+        configs.delete(name)
+        sources.delete(name)
+        await closeQueue(name)
+      }
+
+      return [...configs.keys()]
     },
 
     has(name) {
@@ -184,6 +245,31 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
       await Promise.all([...queues.values()].map((queue) => queue.close()))
       queues.clear()
       configs.clear()
+      sources.clear()
     },
   }
+}
+
+/**
+ * SCAN Redis for `<prefix>:*:meta` keys and invoke `onFound` for each
+ * discovered queue name. Uses cursor iteration so the event loop isn't
+ * blocked on large keyspaces.
+ */
+async function scanPrefix(
+  redis: Redis,
+  prefix: string,
+  onFound: (queueName: string) => void,
+): Promise<void> {
+  const pattern = `${prefix}:*:meta`
+  const prefixLen = prefix.length + 1 // account for the trailing ':'
+  const metaSuffixLen = ":meta".length
+  let cursor = "0"
+  do {
+    const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 200)
+    for (const key of keys) {
+      const name = key.slice(prefixLen, key.length - metaSuffixLen)
+      if (name.length > 0) onFound(name)
+    }
+    cursor = next
+  } while (cursor !== "0")
 }

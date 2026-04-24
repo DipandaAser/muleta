@@ -1,21 +1,12 @@
 import { existsSync } from "node:fs"
 import { serve } from "@hono/node-server"
-import { createMuleta, type QueueConfig } from "@muleta/core"
+import { createMuleta } from "@muleta/core"
 import { createEndpoints, createHandler } from "@muleta/server"
 import { buildPath as uiBuildPath } from "@muleta/ui/server"
 
 function die(message: string): never {
   console.error(`[muleta] ${message}`)
   process.exit(1)
-}
-
-function parseQueues(raw: string | undefined): QueueConfig[] {
-  if (!raw) return []
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .map((name) => ({ name }))
 }
 
 async function main() {
@@ -27,9 +18,7 @@ async function main() {
     die(`invalid MULETA_PORT: ${process.env.MULETA_PORT}`)
   }
 
-  const queues = parseQueues(process.env.MULETA_QUEUES)
-
-  const muleta = await createMuleta({ redis: { url: redisUrl }, queues })
+  const muleta = await createMuleta({ redis: { url: redisUrl } })
 
   const assets = existsSync(uiBuildPath) ? { path: uiBuildPath } : undefined
   if (!assets) {
@@ -41,14 +30,15 @@ async function main() {
     ...(assets ? { assets } : {}),
   })
 
-  const server = serve({ fetch: app.fetch, port }, (info) => {
+  const server = serve({ fetch: app.fetch, port }, async (info) => {
     console.log(`[muleta] ready on http://localhost:${info.port}`)
-    if (queues.length > 0) {
+    const found = await muleta.queues.list()
+    if (found.length > 0) {
       console.log(
-        `[muleta] watching ${queues.length} queue(s): ${queues.map((q) => q.name).join(", ")}`,
+        `[muleta] discovered ${found.length} queue(s): ${found.map((q) => q.name).join(", ")}`,
       )
     } else {
-      console.log("[muleta] no queues registered (set MULETA_QUEUES to a comma-separated list)")
+      console.log("[muleta] no queues found yet (discovery re-runs every 15s)")
     }
   })
 
