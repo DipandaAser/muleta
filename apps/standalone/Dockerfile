@@ -21,9 +21,9 @@ COPY packages/ ./packages/
 COPY apps/standalone/ ./apps/standalone/
 
 # Build the SvelteKit SPA — standalone reads packages/ui/build at runtime
-RUN pnpm --filter @muleta/ui build
+RUN pnpm --filter @muleta-dev/ui build
 
 ENV NODE_ENV=production
 EXPOSE 3737
 
-CMD ["pnpm", "--filter", "@muleta/standalone", "start"]
+CMD ["pnpm", "--filter", "@muleta-dev/standalone", "start"]

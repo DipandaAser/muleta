@@ -4,9 +4,30 @@ Runnable muleta binary. Reads environment variables, binds a port, serves the JS
 
 Not published — this is the consumer of `@muleta-dev/core` and `@muleta-dev/server` that turns them into a running process.
 
+## Run the pre-built image (fastest)
+
+Multi-arch image on GHCR — works on linux/amd64 + linux/arm64 (Apple Silicon). Point it at any reachable Redis:
+
+```bash
+docker run --rm -p 3737:3737 \
+  -e MULETA_REDIS_URL=redis://host.docker.internal:6379 \
+  ghcr.io/muleta-dev/muleta:edge
+```
+
+Then open <http://localhost:3737>.
+
+Available tags:
+
+| Tag | Moves | Use for |
+| --- | --- | --- |
+| `:edge` | every push to `main` | early adopters, always-latest |
+| `:latest` | newest stable release | production |
+| `:X.Y.Z` | pinned forever | reproducible deploys |
+| `:sha-<short>` | pinned forever | debugging a specific commit |
+
 ## Run with Docker Compose
 
-Fastest path. Starts Redis + muleta together:
+Starts Redis + muleta together; builds from source so you can tweak the Dockerfile:
 
 ```bash
 cd apps/standalone

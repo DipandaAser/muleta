@@ -14,6 +14,18 @@ Open-source BullMQ dashboard and toolkit.
 
 ## Quick start
 
+### Run the pre-built Docker image
+
+```bash
+docker run --rm -p 3737:3737 \
+  -e MULETA_REDIS_URL=redis://host.docker.internal:6379 \
+  ghcr.io/muleta-dev/muleta:edge
+```
+
+Multi-arch image (`linux/amd64` + `linux/arm64`). Open <http://localhost:3737>. See [`apps/standalone/README.md`](apps/standalone/README.md) for tag semantics and compose setup.
+
+### Build from source
+
 ```bash
 pnpm install
 pnpm lint
