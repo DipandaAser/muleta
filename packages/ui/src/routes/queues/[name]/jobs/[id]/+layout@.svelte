@@ -116,7 +116,7 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-full">
+<div class="flex flex-col h-full overflow-hidden">
 	{#if data.notFound}
 		<div class="mt-8 mx-10 rounded-lg border border-base-300 bg-base-200 p-10 text-center">
 			<TriangleAlert class="mx-auto text-base-content/40" size={24} />
@@ -136,8 +136,8 @@
 			{data.error}
 		</div>
 	{:else if job}
-		<!-- header + summary strip — kept padded on both sides -->
-		<div class="px-10">
+		<!-- header + summary strip — kept padded on both sides, stays pinned above the scroll region -->
+		<div class="px-10 shrink-0">
 			<!-- header row -->
 			<div class="mt-4 flex items-start gap-3">
 				<StateBadge state={job.state} />
@@ -147,7 +147,7 @@
 					{job.name}
 					<span class="text-[13px] text-base-content/40 font-normal">#{job.id}</span>
 				</h1>
-				<div class="ml-auto flex items-center gap-1">
+				<div class="flex ml-auto items-center gap-1">
 					<button type="button" class="btn btn-sm btn-ghost" disabled>
 						<Pause size={13} /> Discard
 					</button>
@@ -227,7 +227,7 @@
 			</div>
 		</div>
 
-		<div class="mt-5 flex pl-10 border-b border-base-300">
+		<div class="mt-5 flex pl-10 border-b border-base-300 shrink-0">
 			<div class="flex items-center gap-5 flex-1 min-w-0 lg:mr-6">
 				{#each TABS as t (t.id)}
 					{@const isActive = isTabActive(t.id)}
@@ -265,8 +265,8 @@
 			<div class="shrink-0 lg:w-76"></div>
 		</div>
 
-		<div class="flex-1 grid gap-x-6 lg:grid-cols-[1fr_19rem]">
-			<div class="min-w-0 pb-10 pl-10">
+		<div class="flex-1 grid gap-x-6 lg:grid-cols-[1fr_19rem] min-h-0 overflow-hidden">
+			<div class="min-w-0 pb-10 pl-10 overflow-y-auto">
 				{#if actionError}
 					<div
 						class="mt-3 rounded border px-3 py-2 text-[12px]"
@@ -282,7 +282,7 @@
 
 			<aside
 				id="job-sidebar"
-				class="border-t border-base-300 lg:border-0 space-y-5 text-[12px] pt-5 pr-10 pl-5 bg-base-200"
+				class="border-t border-base-300 lg:border-0 space-y-5 text-[12px] pt-5 pr-10 pl-5 pb-10 bg-base-200 overflow-y-auto"
 			>
 				<section>
 					<h3 class="text-[10.5px] uppercase tracking-wider text-base-content/50">Lifecycle</h3>
