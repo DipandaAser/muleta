@@ -32,13 +32,13 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.14
         version: 1.19.14(hono@4.12.14)
-      '@muleta/core':
+      '@muleta-dev/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@muleta/server':
+      '@muleta-dev/server':
         specifier: workspace:*
         version: link:../../packages/server
-      '@muleta/ui':
+      '@muleta-dev/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       bullmq:
@@ -84,7 +84,7 @@ importers:
       '@hono/zod-openapi':
         specifier: ^1.3.0
         version: 1.3.0(hono@4.12.14)(zod@4.3.6)
-      '@muleta/core':
+      '@muleta-dev/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -118,7 +118,7 @@ importers:
       '@lucide/svelte':
         specifier: ^1.8.0
         version: 1.8.0(svelte@5.55.4)
-      '@muleta/server':
+      '@muleta-dev/server':
         specifier: workspace:*
         version: link:../server
       hono:

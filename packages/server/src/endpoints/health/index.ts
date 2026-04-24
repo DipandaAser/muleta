@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import type { Muleta } from "@muleta/core"
+import type { Muleta } from "@muleta-dev/core"
 import { getHealth } from "./handlers/getHealth.js"
 import { healthEvents } from "./handlers/healthEvents.js"
 

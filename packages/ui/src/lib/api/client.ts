@@ -1,4 +1,4 @@
-import type { Handler } from "@muleta/server"
+import type { Handler } from "@muleta-dev/server"
 import { hc, type InferResponseType } from "hono/client"
 
 /**

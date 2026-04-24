@@ -1,8 +1,8 @@
-# @muleta/standalone
+# @muleta-dev/standalone
 
 Runnable muleta binary. Reads environment variables, binds a port, serves the JSON API.
 
-Not published — this is the consumer of `@muleta/core` and `@muleta/server` that turns them into a running process.
+Not published — this is the consumer of `@muleta-dev/core` and `@muleta-dev/server` that turns them into a running process.
 
 ## Run with Docker Compose
 
@@ -29,7 +29,7 @@ docker run --rm -p 6379:6379 redis:7-alpine
 
 # 2. Boot muleta (from the repo root)
 MULETA_REDIS_URL=redis://localhost:6379 \
-pnpm -F @muleta/standalone dev
+pnpm -F @muleta-dev/standalone dev
 
 # 3. Hit the API
 curl http://localhost:3737/api/v1/queues

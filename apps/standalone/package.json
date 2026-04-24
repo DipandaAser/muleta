@@ -1,5 +1,5 @@
 {
-  "name": "@muleta/standalone",
+  "name": "@muleta-dev/standalone",
   "version": "0.0.0",
   "description": "Standalone muleta binary — reads env, binds a port, serves the API.",
   "license": "Apache-2.0",
@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.14",
-    "@muleta/core": "workspace:*",
-    "@muleta/server": "workspace:*",
-    "@muleta/ui": "workspace:*",
+    "@muleta-dev/core": "workspace:*",
+    "@muleta-dev/server": "workspace:*",
+    "@muleta-dev/ui": "workspace:*",
     "bullmq": "^5.74.1",
     "hono": "^4.12.14",
     "ioredis": "^5.10.1",

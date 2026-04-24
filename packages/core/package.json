@@ -1,5 +1,5 @@
 {
-  "name": "@muleta/core",
+  "name": "@muleta-dev/core",
   "version": "0.0.0",
   "description": "Core queue registry, event bus, and plugin host for muleta.",
   "license": "Apache-2.0",

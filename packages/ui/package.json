@@ -1,5 +1,5 @@
 {
-  "name": "@muleta/ui",
+  "name": "@muleta-dev/ui",
   "version": "0.0.0",
   "description": "SvelteKit SPA for the muleta dashboard.",
   "license": "Apache-2.0",
@@ -26,7 +26,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@lucide/svelte": "^1.8.0",
-    "@muleta/server": "workspace:*",
+    "@muleta-dev/server": "workspace:*",
     "hono": "^4.12.14"
   },
   "devDependencies": {
