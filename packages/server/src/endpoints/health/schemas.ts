@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi"
-import { REDIS_CONNECTION_STATUSES } from "@muleta/core"
+import { REDIS_CONNECTION_STATUSES } from "@muleta-dev/core"
 
 const RedisStatusSchema = z.enum(REDIS_CONNECTION_STATUSES).openapi("RedisConnectionStatus")
 

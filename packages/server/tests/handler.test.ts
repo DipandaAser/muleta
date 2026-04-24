@@ -1,5 +1,5 @@
 import type { z } from "@hono/zod-openapi"
-import { createMuleta, type Muleta } from "@muleta/core"
+import { createMuleta, type Muleta } from "@muleta-dev/core"
 import { Queue } from "bullmq"
 import { hc } from "hono/client"
 import { Redis } from "ioredis"

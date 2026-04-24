@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi"
-import { JobNotFoundError } from "@muleta/core"
+import { JobNotFoundError } from "@muleta-dev/core"
 import { defineEndpoint } from "../../../define.js"
 import { ErrorResponseSchema, jobParamsSchema } from "../schema.js"
 

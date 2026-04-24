@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
-import type { Muleta } from "@muleta/core"
+import type { Muleta } from "@muleta-dev/core"
 import { getQueue } from "./handlers/getQueue.js"
 import { listQueues } from "./handlers/listQueues.js"
 import { queuesEvents } from "./handlers/queuesEvents.js"

@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs"
 import { serve } from "@hono/node-server"
-import { createMuleta } from "@muleta/core"
-import { createEndpoints, createHandler } from "@muleta/server"
-import { buildPath as uiBuildPath } from "@muleta/ui/server"
+import { createMuleta } from "@muleta-dev/core"
+import { createEndpoints, createHandler } from "@muleta-dev/server"
+import { buildPath as uiBuildPath } from "@muleta-dev/ui/server"
 
 function die(message: string): never {
   console.error(`[muleta] ${message}`)
@@ -22,7 +22,9 @@ async function main() {
 
   const assets = existsSync(uiBuildPath) ? { path: uiBuildPath } : undefined
   if (!assets) {
-    console.log("[muleta] UI build not found (run `pnpm -F @muleta/ui build`); serving API only.")
+    console.log(
+      "[muleta] UI build not found (run `pnpm -F @muleta-dev/ui build`); serving API only.",
+    )
   }
 
   const app = createHandler({

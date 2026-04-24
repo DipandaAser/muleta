@@ -1,5 +1,5 @@
 import type { RouteConfig, RouteHandler } from "@hono/zod-openapi"
-import type { Muleta } from "@muleta/core"
+import type { Muleta } from "@muleta-dev/core"
 
 /**
  * Shape of a single HTTP endpoint: its zod-openapi route definition plus a

@@ -1,5 +1,5 @@
 {
-  "name": "@muleta/server",
+  "name": "@muleta-dev/server",
   "version": "0.0.0",
   "description": "HTTP handler for muleta Hono-based, framework-agnostic.",
   "license": "Apache-2.0",
@@ -35,7 +35,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.14",
     "@hono/zod-openapi": "^1.3.0",
-    "@muleta/core": "workspace:*"
+    "@muleta-dev/core": "workspace:*"
   },
   "devDependencies": {
     "bullmq": "^5.74.1",
