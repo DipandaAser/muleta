@@ -9,14 +9,9 @@ name: GHCR retention
 # of anything untagged for 7+ days keeps the package page tidy.
 
 on:
-  # Reactive: kick off right after a successful Docker publish, so the
-  # orphans created by the just-promoted `:edge`/`:latest` get cleaned up
-  # once they age past the cut-off.
   workflow_run:
-    workflows: ["Docker"]
-    types: [completed]
-  # Belt-and-braces: a weekly sweep covers any window where the Docker
-  # workflow didn't run (e.g. nothing landed for a week).
+    workflows: [ "Docker" ]
+    types: [ completed ]
   schedule:
     - cron: "0 4 * * 0"
   workflow_dispatch:
@@ -37,24 +32,17 @@ jobs:
     timeout-minutes: 10
     permissions:
       packages: write
-    # workflow_run fires for every Docker completion (success + failure +
-    # cancelled). Skip when the publish failed — no new orphans, no point
-    # cluttering the Actions log with no-op cleanups.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: snok/container-retention-policy@v2
         with:
           account-type: org
           org-name: muleta-dev
           image-names: muleta
-          # Drop manifests that are untagged AND haven't been touched in a
-          # week. Tagged versions (semver, :edge, :latest, :sha-…,
-          # :buildcache) are never affected.
           untagged-only: true
           cut-off: One week ago UTC
-          # Belt-and-braces: even if something tagged slipped past the
-          # untagged-only filter, never delete these.
           skip-tags: latest, edge, buildcache
-          # Manual runs default to dry-run; the cron run is real.
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || 'false' }}
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run ||
+            'false' }}
           token: ${{ secrets.GHCR_TOKEN }}
