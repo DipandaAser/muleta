@@ -4,6 +4,8 @@ import { createMuleta } from "@muleta-dev/core"
 import { createEndpoints, createHandler } from "@muleta-dev/server"
 import { buildPath as uiBuildPath } from "@muleta-dev/ui/server"
 
+const PORT = 3737
+
 function die(message: string): never {
   console.error(`[muleta] ${message}`)
   process.exit(1)
@@ -13,26 +15,17 @@ async function main() {
   const redisUrl = process.env.MULETA_REDIS_URL
   if (!redisUrl) die("MULETA_REDIS_URL is required")
 
-  const port = Number(process.env.MULETA_PORT ?? 3737)
-  if (!Number.isInteger(port) || port <= 0) {
-    die(`invalid MULETA_PORT: ${process.env.MULETA_PORT}`)
-  }
-
   const muleta = await createMuleta({ redis: { url: redisUrl } })
 
   const assets = existsSync(uiBuildPath) ? { path: uiBuildPath } : undefined
-  if (!assets) {
-    console.log(
-      "[muleta] UI build not found (run `pnpm -F @muleta-dev/ui build`); serving API only.",
-    )
-  }
+  if (!assets) die(`UI assets not found at ${uiBuildPath}`)
 
   const app = createHandler({
     endpoints: createEndpoints(muleta),
     ...(assets ? { assets } : {}),
   })
 
-  const server = serve({ fetch: app.fetch, port }, async (info) => {
+  const server = serve({ fetch: app.fetch, port: PORT }, async (info) => {
     console.log(`[muleta] ready on http://localhost:${info.port}`)
     const found = await muleta.queues.list()
     if (found.length > 0) {
