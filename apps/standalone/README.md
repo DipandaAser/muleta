@@ -58,10 +58,13 @@ curl http://localhost:3737/api/v1/queues
 
 ## Environment
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `MULETA_REDIS_URL` | yes | — | `redis://[:password@]host:port[/db]` |
-| `MULETA_PORT` | no | `3737` | Port to bind |
+Copy [`.env.example`](./.env.example) to `.env` and fill it in.
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `MULETA_REDIS_URL` | yes | `redis://[:password@]host:port[/db]` |
+
+The standalone always binds `3737`. If you need a different port, map it at the proxy / container layer (`docker run -p 8080:3737`).
 
 Queues are auto-discovered from Redis — any BullMQ queue under the default `bull:` prefix shows up within 15 s. No registration step required.
 
