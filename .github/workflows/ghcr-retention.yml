@@ -1,0 +1,48 @@
+name: GHCR retention
+
+# Cleans up orphan manifests from the muleta-dev GHCR package. Each `main`
+# push creates a new multi-arch manifest list (with two per-platform
+# manifests + two attestations underneath). When `:edge` moves, the
+# previous manifest list becomes untagged — together with everything it
+# referenced. None of those affect users (`:edge`/`:latest`/semver tags
+# point at current manifests), but they pile up over time. Weekly sweep
+# of anything untagged for 7+ days keeps the package page tidy.
+
+on:
+  workflow_run:
+    workflows: [ "Docker" ]
+    types: [ completed ]
+  schedule:
+    - cron: "0 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Print what would be deleted without actually deleting"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: prune untagged manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    if: ${{ github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: snok/container-retention-policy@v2
+        with:
+          account-type: org
+          org-name: muleta-dev
+          image-names: muleta
+          untagged-only: true
+          cut-off: One week ago UTC
+          skip-tags: latest, edge, buildcache
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run ||
+            'false' }}
+          token: ${{ secrets.GHCR_TOKEN }}
