@@ -14,6 +14,12 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths:
+      - "apps/standalone/**"
+      - "packages/**"
+      - ".github/workflows/docker.yml"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
   workflow_dispatch:
 
 concurrency:
@@ -58,6 +64,7 @@ jobs:
             latest=auto
           labels: |
             org.opencontainers.image.title=muleta
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Open-source BullMQ dashboard and toolkit
             org.opencontainers.image.vendor=muleta-dev
             org.opencontainers.image.licenses=Apache-2.0
