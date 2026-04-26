@@ -17,6 +17,9 @@
       "!**/coverage",
       "!**/*.tsbuildinfo",
       "!**/*.svelte",
+      "!**/*.astro",
+      "!**/.astro",
+      "!apps/site/src/styles",
       "!pnpm-lock.yaml"
     ]
   },

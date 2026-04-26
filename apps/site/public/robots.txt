@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# AI crawlers — explicit allow so they can index docs + landing.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://muleta.dev/sitemap-index.xml

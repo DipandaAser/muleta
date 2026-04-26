@@ -1,0 +1,143 @@
+---
+import MuletaMark from "./MuletaMark.astro"
+
+
+---
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <span class="mk"><MuletaMark size={26} /></span>
+      <div class="name">muleta</div>
+      <p>Queue ops for BullMQ. Self-hosted, open source, shipped by humans.</p>
+      <div style="display: flex; gap: 8px; margin-top: 6px">
+        <a
+          class="btn sm ghost"
+          href="https://github.com/muleta-dev/muleta"
+          rel="noopener"
+          aria-label="GitHub"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+            ></path>
+          </svg>
+        </a>
+        <a class="btn sm ghost" href="/discord">Discord</a>
+        <a class="btn sm ghost" href="https://x.com/muleta_dev" rel="noopener">X</a>
+      </div>
+    </div>
+    
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 muleta contributors</span>
+    <span>·</span>
+    <span>Apache 2.0</span>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border);
+    margin-top: 80px;
+    padding: 56px 0 40px;
+    background: var(--bg-1);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+    gap: 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--s-9);
+  }
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .footer-brand .mk {
+    width: 26px;
+    height: 26px;
+    color: var(--accent);
+  }
+  .footer-brand .name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .footer-brand p {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--fg-2);
+    line-height: 1.55;
+    max-width: 32ch;
+  }
+  .footer-col h5 {
+    margin: 0 0 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-3);
+  }
+  .footer-col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer-col a {
+    font-size: 13px;
+    color: var(--fg-1);
+  }
+  .footer-col a:hover {
+    color: var(--fg);
+  }
+
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 48px auto 0;
+    padding: 20px var(--s-9) 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: var(--s-6);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  .footer-bottom .right {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+  }
+  .footer-bottom a {
+    color: var(--fg-2);
+  }
+  .footer-bottom a:hover {
+    color: var(--fg);
+  }
+
+  @media (max-width: 900px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+  }
+  @media (max-width: 640px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .footer-bottom .right {
+      margin-left: 0;
+    }
+  }
+</style>

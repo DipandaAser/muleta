@@ -1,0 +1,118 @@
+---
+const quotes = [
+  {
+    body: "Replaced three internal dashboards with muleta in an afternoon. The flow graph alone paid for the migration.",
+    name: "Elena R.",
+    role: "staff eng, logistics platform",
+    av: "ER",
+  },
+  {
+    body: "We run ~800 queues across four Redis clusters. Bull Board was a spreadsheet. muleta is a cockpit.",
+    name: "Jonas P.",
+    role: "SRE, series-B fintech",
+    av: "JP",
+  },
+  {
+    body: "The embed story is the one. Our support team files retries without ever leaving the admin panel they already use.",
+    name: "Priya S.",
+    role: "eng lead, support tools",
+    av: "PS",
+  },
+]
+---
+
+<section class="section section-divide">
+  <div class="page">
+    <div class="section-head">
+      <div class="eyebrow"><span class="dot"></span> in production</div>
+      <h2>Running at teams that ship to millions.</h2>
+    </div>
+    <div class="quotes">
+      {
+        quotes.map((q) => (
+          <figure class="quote">
+            <blockquote class="q-body">{q.body}</blockquote>
+            <figcaption class="q-author">
+              <div class="q-avatar">{q.av}</div>
+              <div class="q-meta">
+                <div class="q-name">{q.name}</div>
+                <div class="q-role">{q.role}</div>
+              </div>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .quotes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-5);
+  }
+  .quote {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 200px;
+  }
+  .quote .q-body {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--fg);
+    flex: 1;
+  }
+  .quote .q-body::before {
+    content: '"';
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 28px;
+    line-height: 0;
+    position: relative;
+    top: 10px;
+    margin-right: 2px;
+  }
+  .quote .q-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .quote .q-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-1);
+    border: 1px solid var(--border-2);
+  }
+  .quote .q-meta {
+    display: flex;
+    flex-direction: column;
+  }
+  .quote .q-name {
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .quote .q-role {
+    font-size: 11px;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+  }
+
+  @media (max-width: 900px) {
+    .quotes {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

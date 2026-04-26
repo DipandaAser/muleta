@@ -1,0 +1,16 @@
+/* ============================================================
+   muleta site — theme entry
+   ============================================================
+   Skips Tailwind v4's `preflight` layer (the design CSS in
+   global.css already handles its own resets and we don't want
+   preflight's `svg { display: block }` collapsing inline icons).
+   The shared brand theme — daisyUI plugin + muleta-dark/light
+   themes, design token ladder, font imports, brand utilities —
+   lives at @muleta-dev/ui/theme.css and is reused by the
+   dashboard so colors stay locked across both surfaces.
+   ============================================================ */
+
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@muleta-dev/ui/theme.css";

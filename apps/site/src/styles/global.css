@@ -1,0 +1,344 @@
+/* ============================================================
+   muleta site — global, cross-cutting only
+   ============================================================
+   Holds:
+     - design token namespace (`--bg`, `--fg-*`, `--accent`, etc.)
+       still referenced by every section's scoped <style> block
+     - `[data-accent]` palette switches
+     - `.btn` primitives (used by every section)
+     - `.page` page-shell wrapper
+     - `.eyebrow` section pill (used in hero, features, embed, oss…)
+     - `.section` / `.section-divide` / `.section-head` scaffolding
+     - global `::selection` polish
+     - the hero's radial-glow background painter
+
+   Per-section styles (nav, hero, features, showcase, quotes, oss,
+   cta, footer, install widget) live in scoped <style> blocks inside
+   their respective Astro components.
+   ============================================================ */
+
+:root {
+  /* type */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+  /* spacing */
+  --s-0: 0;
+  --s-1: 2px;
+  --s-2: 4px;
+  --s-3: 6px;
+  --s-4: 8px;
+  --s-5: 12px;
+  --s-6: 16px;
+  --s-7: 20px;
+  --s-8: 24px;
+  --s-9: 32px;
+  --s-10: 48px;
+
+  /* radii */
+  --r-1: 3px;
+  --r-2: 5px;
+  --r-3: 7px;
+  --r-4: 10px;
+
+  /* density */
+  --row-h: 32px;
+  --row-px: 12px;
+}
+
+[data-density="comfortable"] {
+  --row-h: 40px;
+  --row-px: 16px;
+}
+
+/* -------------------- DARK -------------------- */
+[data-theme="muleta-dark"] {
+  --bg: #0a0a0b;
+  --bg-1: #0f0f11;
+  --bg-2: #151518;
+  --bg-3: #1c1c21;
+  --bg-4: #232329;
+  --bg-hover: #1a1a1f;
+  --bg-select: #23232b;
+
+  --fg: #ededef;
+  --fg-1: #c9c9cf;
+  --fg-2: #8b8b92;
+  --fg-3: #5c5c64;
+  --fg-4: #3a3a40;
+
+  --border: #232328;
+  --border-2: #2d2d34;
+  --border-3: #3a3a42;
+
+  --shadow-1: 0 1px 0 0 rgba(255, 255, 255, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 0 0 rgba(255, 255, 255, 0.03) inset;
+
+  --st-waiting-fg: #a8b2c4;
+  --st-waiting-bg: #1c2130;
+  --st-active-fg: #6ea9ff;
+  --st-active-bg: #101f38;
+  --st-completed-fg: #3ecf8e;
+  --st-completed-bg: #0d2219;
+  --st-failed-fg: #ff6b7a;
+  --st-failed-bg: #2a1015;
+  --st-delayed-fg: #d8a74a;
+  --st-delayed-bg: #2a1f0b;
+  --st-paused-fg: #9c8de0;
+  --st-paused-bg: #1d1830;
+  --st-prioritized-fg: #e88cc8;
+  --st-prioritized-bg: #2a1425;
+
+  color-scheme: dark;
+}
+
+/* -------------------- LIGHT -------------------- */
+[data-theme="muleta-light"] {
+  --bg: #fafaf8;
+  --bg-1: #ffffff;
+  --bg-2: #f4f4f1;
+  --bg-3: #ebebe7;
+  --bg-4: #e1e1dc;
+  --bg-hover: #efefeb;
+  --bg-select: #e6e6e0;
+
+  --fg: #1a1a1c;
+  --fg-1: #3a3a3e;
+  --fg-2: #6b6b70;
+  --fg-3: #9a9a9f;
+  --fg-4: #c8c8cc;
+
+  --border: #e3e3dd;
+  --border-2: #d6d6cf;
+  --border-3: #bfbfb8;
+
+  --shadow-1: 0 1px 0 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(30, 30, 30, 0.04);
+  --shadow-2: 0 8px 32px rgba(30, 30, 30, 0.08), 0 1px 3px rgba(30, 30, 30, 0.06);
+
+  --st-waiting-fg: #4a5568;
+  --st-waiting-bg: #edeef1;
+  --st-active-fg: #1e5fc4;
+  --st-active-bg: #e1ecff;
+  --st-completed-fg: #0f7a4a;
+  --st-completed-bg: #dff5e9;
+  --st-failed-fg: #b6202f;
+  --st-failed-bg: #fce1e4;
+  --st-delayed-fg: #8a6614;
+  --st-delayed-bg: #fbefd0;
+  --st-paused-fg: #5a3fb0;
+  --st-paused-bg: #ece7fa;
+  --st-prioritized-fg: #a9348b;
+  --st-prioritized-bg: #fadcf0;
+
+  color-scheme: light;
+}
+
+/* -------------------- ACCENTS -------------------- */
+[data-accent="muleta"] {
+  --accent: oklch(0.58 0.19 25);
+  --accent-fg: oklch(0.98 0.005 25);
+  --accent-bg: oklch(0.58 0.19 25 / 0.14);
+  --accent-border: oklch(0.58 0.19 25 / 0.35);
+}
+[data-accent="indigo"] {
+  --accent: oklch(0.63 0.17 265);
+  --accent-fg: oklch(0.99 0.003 265);
+  --accent-bg: oklch(0.63 0.17 265 / 0.14);
+  --accent-border: oklch(0.63 0.17 265 / 0.35);
+}
+[data-accent="lime"] {
+  --accent: oklch(0.75 0.17 135);
+  --accent-fg: oklch(0.12 0.02 135);
+  --accent-bg: oklch(0.75 0.17 135 / 0.14);
+  --accent-border: oklch(0.75 0.17 135 / 0.35);
+}
+
+/* -------------------- BUTTON PRIMITIVE -------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 80ms;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--bg-3);
+}
+.btn:active {
+  background: var(--bg-4);
+}
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-1);
+}
+.btn.ghost:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.btn.accent {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+.btn.accent:hover {
+  filter: brightness(1.08);
+}
+.btn.danger {
+  color: var(--st-failed-fg);
+}
+.btn.danger:hover {
+  background: var(--st-failed-bg);
+}
+.btn.icon {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+.btn.sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.btn.lg {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+.btn.xl {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--r-2);
+}
+.btn svg {
+  width: 13px;
+  height: 13px;
+}
+.btn.sm svg {
+  width: 12px;
+  height: 12px;
+}
+.btn.xl svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* -------------------- PAGE SHELL -------------------- */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--s-9);
+}
+.page-full {
+  padding: 0 var(--s-9);
+}
+
+/* -------------------- EYEBROW -------------------- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.eyebrow .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* -------------------- SECTION SCAFFOLD -------------------- */
+.section {
+  padding: 80px 0;
+  position: relative;
+}
+.section-divide::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--border);
+  max-width: 1200px;
+  margin: 0 auto var(--s-10);
+}
+.section-head {
+  margin-bottom: 40px;
+}
+.section-head h2 {
+  margin: var(--s-5) 0 var(--s-4);
+  font-size: clamp(28px, 3.5vw, 42px);
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+.section-head .sub {
+  color: var(--fg-2);
+  font-size: 15px;
+  max-width: 56ch;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* -------------------- SELECTION POLISH -------------------- */
+::selection {
+  background: var(--accent-bg);
+  color: var(--fg);
+}
+
+/* Hero radial glow + cascade. Lives globally (not in HeroB.astro)
+   because it's painted on `.hero`, the section element, and the
+   ::before pseudo wants to fill the whole hero region behind any
+   scoped child styling. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 800px 400px at 80% 30%,
+      color-mix(in oklab, var(--accent) 8%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 90%, var(--bg-1)));
+  z-index: 0;
+  opacity: 0.6;
+}
+[data-theme="muleta-light"] .hero::before {
+  opacity: 0.4;
+}
+
+/* -------------------- RESPONSIVE — page padding -------------------- */
+@media (max-width: 900px) {
+  .page,
+  :where(.hero-inner, .footer-bottom) {
+    padding-left: var(--s-7);
+    padding-right: var(--s-7);
+  }
+}
+@media (max-width: 640px) {
+  .page,
+  :where(.hero-inner, .footer-bottom) {
+    padding-left: var(--s-6);
+    padding-right: var(--s-6);
+  }
+  .section-head h2 {
+    font-size: clamp(28px, 6vw, 38px);
+  }
+}
