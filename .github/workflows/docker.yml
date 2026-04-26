@@ -58,6 +58,7 @@ jobs:
             latest=auto
           labels: |
             org.opencontainers.image.title=muleta
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.description=Open-source BullMQ dashboard and toolkit
             org.opencontainers.image.vendor=muleta-dev
             org.opencontainers.image.licenses=Apache-2.0
