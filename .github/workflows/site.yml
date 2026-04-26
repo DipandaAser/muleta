@@ -1,0 +1,64 @@
+name: Site
+
+# Build apps/site (Astro) and publish to GitHub Pages. Custom domain
+# (muleta.dev) wired via the CNAME file in apps/site/public/.
+#
+# Required one-time setup:
+#   Repo Settings → Pages → Build and deployment → Source: GitHub Actions
+#   Repo Settings → Pages → Custom domain: muleta.dev (after first deploy)
+#   DNS: ALIAS/ANAME muleta.dev → DipandaAser.github.io
+#        (or A records to GitHub Pages IPs; CNAME for www subdomain)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/site/**"
+      - ".github/workflows/site.yml"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @muleta-dev/site build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/site/dist
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,167 @@
+---
+import { ChevronRight, Moon, Sun } from "@lucide/astro"
+import BrandIntro from "@muleta-dev/ui/BrandIntro.svelte"
+import { formatStars, getRepoStars } from "../lib/github"
+
+const links = [
+  { href: "/docs", label: "Docs" },
+  { href: "/plugins", label: "Plugins" },
+  { href: "/changelog", label: "Changelog" },
+  { href: "/blog", label: "Blog" },
+]
+
+// Build-time fetch — falls back to `null` (count + separator hidden) on
+// any failure, so a flaky GitHub API never breaks the build.
+const stars = await getRepoStars()
+const starsLabel = stars !== null ? formatStars(stars) : null
+---
+
+<header class="nav">
+  <a class="nav-brand" href="/">
+    <BrandIntro client:load />
+    <span class="tag">:edge</span>
+  </a>
+  <nav style="" class="hidden! nav-links" aria-label="Primary">
+    {links.map((l) => <a class="nav-link" href={l.href}>{l.label}</a>)}
+  </nav>
+  <div class="nav-right">
+    <a
+      class="nav-star"
+      href="https://github.com/dipandaaser/muleta"
+      rel="noopener"
+      title="GitHub stars"
+    >
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
+        <path
+          d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+        ></path>
+      </svg>
+      {
+        starsLabel && (
+          <>
+            <span class="n">{starsLabel}</span>
+            <span class="bar" />
+          </>
+        )
+      }
+      <span>Star</span>
+    </a>
+    <a class="hidden! btn accent" href="/docs">Get started <ChevronRight size={14} /></a>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--s-9);
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    gap: var(--s-7);
+  }
+  .nav-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .nav-brand .tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-3);
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-left: 4px;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: var(--s-6);
+  }
+  .nav-link {
+    height: 30px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--fg-1);
+    border-radius: var(--r-2);
+  }
+  .nav-link:hover {
+    background: var(--bg-hover);
+    color: var(--fg);
+  }
+  .nav-link.active {
+    color: var(--fg);
+    background: var(--bg-2);
+  }
+  .nav-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .nav-star {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-2);
+    background: var(--bg-1);
+    font-size: 12px;
+    color: var(--fg-1);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-star .n {
+    color: var(--fg);
+  }
+  .nav-star:hover {
+    background: var(--bg-2);
+  }
+  .nav-star .bar {
+    width: 1px;
+    height: 14px;
+    background: var(--border-2);
+  }
+
+  @media (max-width: 900px) {
+    .nav {
+      padding: 12px var(--s-7);
+    }
+    .nav-star .bar {
+      display: none;
+    }
+    .nav-star span:not(.n) {
+      display: none;
+    }
+  }
+  @media (max-width: 640px) {
+    .nav {
+      padding: 10px var(--s-6);
+      gap: 8px;
+    }
+    .nav-links {
+      display: none;
+    }
+    .nav-brand .tag {
+      display: none;
+    }
+    .nav-right .btn.accent {
+      display: none;
+    }
+  }
+</style>

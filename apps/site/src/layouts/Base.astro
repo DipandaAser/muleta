@@ -1,0 +1,92 @@
+---
+import "../styles/theme.css"
+import "../styles/global.css"
+
+interface Props {
+  title?: string
+  description?: string
+  canonical?: string
+  ogImage?: string
+}
+
+const {
+  title = "muleta — queue ops for BullMQ",
+  description = "A serious operator dashboard for BullMQ. Real-time, self-hosted, embeddable. See every waiting, active, failed, and delayed job in one dense, operator-grade dashboard.",
+  canonical,
+  ogImage = "/og-default.png",
+} = Astro.props
+
+const canonicalURL = canonical ?? new URL(Astro.url.pathname, Astro.site).toString()
+const ogImageURL = new URL(ogImage, Astro.site).toString()
+
+// JSON-LD: SoftwareApplication + Organization. Helps AI Overviews + Rich
+// Results pick up the project's name, license, repo, install command.
+const softwareLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "muleta",
+  description: "OpenSource dashboard for BullMQ — real-time, self-hosted, embeddable.",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Linux, macOS, Windows",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  license: "https://www.apache.org/licenses/LICENSE-2.0",
+  softwareVersion: "0.8",
+  url: "https://muleta.dev",
+  codeRepository: "https://github.com/DipandaAser/muleta",
+}
+const orgLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "muleta",
+  url: "https://muleta.dev",
+  logo: "https://muleta.dev/icon.svg",
+}
+---
+
+<!doctype html>
+<html lang="en" data-theme="muleta-dark" data-accent="muleta" data-density="compact" data-animate="full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:site_name" content="muleta" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+
+    <!-- Theme color matches the dashboard's --bg variable -->
+    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Fonts: Geist + Geist Mono via Google Fonts. Preconnect for first paint. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json" set:html={JSON.stringify(softwareLd)} is:inline />
+    <script type="application/ld+json" set:html={JSON.stringify(orgLd)} is:inline />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,91 @@
+---
+import { ChevronRight, SquareArrowOutUpRight } from "@lucide/astro"
+import { COMMANDS, getHighlighted } from "../lib/install"
+import InstallTabbed from "./InstallTabbed.svelte"
+
+const cmdHtml = await getHighlighted()
+---
+
+<section class="section">
+  <div class="page">
+    <div class="cta-card">
+      <div>
+        <h2>Spin it up in 10 seconds.</h2>
+        <p>No signup. No cloud account. One command and a Redis URL.</p>
+      </div>
+      <div class="cta-actions">
+        <InstallTabbed commands={COMMANDS} cmdHtml={cmdHtml} client:load />
+        <div style="display: flex; gap: 8px">
+          <a class="btn xl accent" href="/docs">
+            Read the docs <ChevronRight size={14} />
+          </a>
+          <a class="btn xl" href="https://demo.muleta.dev" rel="noopener">
+            Live demo <SquareArrowOutUpRight size={14} />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-card {
+    background:
+      radial-gradient(
+        ellipse 80% 60% at 80% 50%,
+        color-mix(in oklab, var(--accent) 14%, transparent),
+        transparent 70%
+      ),
+      var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-4);
+    padding: 64px 56px;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-card h2 {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 34px);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+  .cta-card p {
+    margin: 12px 0 0;
+    color: var(--fg-2);
+    font-size: 14px;
+    max-width: 48ch;
+  }
+  .cta-card .cta-actions {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    .cta-card {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 40px 32px;
+    }
+  }
+  @media (max-width: 640px) {
+    .cta-card {
+      padding: 28px 20px;
+      gap: 20px;
+    }
+    .cta-actions {
+      width: 100%;
+    }
+    .cta-actions > div {
+      flex-wrap: wrap;
+    }
+  }
+</style>

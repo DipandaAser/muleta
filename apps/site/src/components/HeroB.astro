@@ -1,0 +1,485 @@
+---
+import {
+  Clock,
+  House,
+  Plug,
+  Rows3,
+  SquareArrowOutUpRight,
+  Star,
+  Users,
+  Workflow,
+} from "@lucide/astro"
+import { COMMANDS, getHighlighted } from "../lib/install"
+import InstallTabbed from "./InstallTabbed.svelte"
+
+const cmdHtml = await getHighlighted()
+
+// Static decorative sparkline points — generated once at build, identical
+// each render so SSR and any hydration agree. Mirrors the design's <Spark>
+// component without the random walk (which would cause hydration drift).
+function spark(seed: number): string {
+  const points: string[] = []
+  let y = 12
+  for (let i = 0; i < 24; i++) {
+    const r = Math.sin(seed * 13.37 + i * 1.9) * 0.5
+    y += r * 6
+    y = Math.max(4, Math.min(22, y))
+    points.push(`${i * 2.4} ${y.toFixed(2)}`)
+  }
+  return `M ${points.join(" L ")}`
+}
+
+const rows: Array<{
+  name: string
+  starred?: boolean
+  w: string
+  a: string | null
+  f: string | null
+  c: string
+  sparkColor: "accent" | "ok" | "err"
+}> = [
+  { name: "emails", starred: true, w: "4", a: "128", f: "3", c: "12k", sparkColor: "accent" },
+  { name: "webhooks", w: "2", a: "64", f: null, c: "4.2k", sparkColor: "ok" },
+  { name: "search-indexer", w: "8", a: "512", f: "12", c: "89k", sparkColor: "accent" },
+  { name: "reports", starred: true, w: "1", a: null, f: null, c: "2.1k", sparkColor: "ok" },
+  { name: "video-encode", w: "6", a: "24", f: "7", c: "840", sparkColor: "err" },
+  { name: "billing", w: "1", a: "4", f: null, c: "1.8k", sparkColor: "ok" },
+]
+
+function colorVar(c: "accent" | "ok" | "err"): string {
+  return c === "err"
+    ? "var(--st-failed-fg)"
+    : c === "ok"
+      ? "var(--st-completed-fg)"
+      : "var(--accent)"
+}
+---
+
+<section class="hero hero-b">
+  <div class="hero-inner">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Open source · self-hosted <a href="https://demo.muleta.dev" rel="noopener" class="live-pill"><span class="d"></span> live demo </a></div>
+        <h1>See your queues. <em>In real time.</em></h1>
+        <p class="lede">
+          Every waiting, active, failed, and delayed job — across every BullMQ queue — in one
+          dense, operator-grade dashboard. Click a failure, see the stack, the inputs, the retry
+          history, and fix it in one command.
+        </p>
+        <div class="hero-ctas">
+          <InstallTabbed commands={COMMANDS} cmdHtml={cmdHtml} client:load />
+        </div>
+      </div>
+      <div class="hover-3d">
+        <div class="mini-dash">
+          <div class="mini-chrome">
+            <i style="background: #ff5f56"></i>
+            <i style="background: #ffbd2e"></i>
+            <i
+              style="background: #27c93f"></i>
+            <span class="addr">demo.muleta.dev/queues</span>
+          </div>
+          <div class="mini-body">
+            <div class="mini-side">
+              <div class="grp">queues</div>
+              <div class="mi on"><House size={10} class="ic" /> Overview</div>
+              <div class="mi"><Rows3 size={10} class="ic" /> default</div>
+              <div class="mi"><Rows3 size={10} class="ic" /> emails</div>
+              <div class="mi"><Rows3 size={10} class="ic" /> webhooks</div>
+              <div class="mi"><Rows3 size={10} class="ic" /> search-indexer</div>
+              <div class="grp">tools</div>
+              <div class="mi"><Workflow size={10} class="ic" /> Flows</div>
+              <div class="mi"><Users size={10} class="ic" /> Workers</div>
+              <div class="mi"><Clock size={10} class="ic" /> Schedules</div>
+            </div>
+            <div class="mini-main">
+              <div class="mini-strip">
+                <div class="c"><div class="l">Active</div><div class="v act">1,248</div></div>
+                <div class="c"><div class="l">Waiting</div><div class="v">3,410</div></div>
+                <div class="c"><div class="l">Failed</div><div class="v err">42</div></div>
+                <div class="c"><div class="l">/sec</div><div class="v ok">842</div></div>
+              </div>
+              <div class="mini-rows">
+                <div class="mini-row h">
+                  <span></span><span>queue</span>
+                  <span style="text-align: right">w</span>
+                  <span style="text-align: right">a</span>
+                  <span style="text-align: right">f</span>
+                  <span style="text-align: right">c</span>
+                  <span style="text-align: right">thru</span>
+                </div>
+                {
+                  rows.map((row, i) => (
+                    <div class="mini-row">
+                      <span class={`star ${row.starred ? "on" : ""}`}>
+                        <Star size={10} />
+                      </span>
+                      <span class="n">{row.name}</span>
+                      <span>{row.w}</span>
+                      <span class={row.a ? "act" : "z"}>{row.a ?? "0"}</span>
+                      <span class={row.f ? "er" : "z"}>{row.f ?? "0"}</span>
+                      <span>{row.c}</span>
+                      <span class="sp">
+                        <svg width="60" height="24" viewBox="0 0 60 24" style="display: block">
+                          <path
+                            d={spark(i + 1)}
+                            fill="none"
+                            stroke={colorVar(row.sparkColor)}
+                            stroke-width="1.25"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 8 empty divs needed for the 3D effect -->
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    padding: 80px 0 40px;
+    min-height: 560px;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--s-9);
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero h1 {
+    margin: var(--s-6) 0 var(--s-6);
+    font-size: clamp(42px, 5.6vw, 68px);
+    line-height: 1.02;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero .lede {
+    margin: 0;
+    color: var(--fg-1);
+    font-size: 17px;
+    max-width: 52ch;
+    line-height: 1.55;
+  }
+  .hero-ctas {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-top: var(--s-8);
+    flex-wrap: wrap;
+  }
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--s-6);
+    margin-top: var(--s-8);
+    font-size: 12px;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+    flex-wrap: wrap;
+  }
+  .hero-meta .i {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hero-meta .i svg {
+    color: var(--fg-3);
+    width: 13px;
+    height: 13px;
+  }
+  .hero-meta .sep {
+    width: 1px;
+    height: 10px;
+    background: var(--border-2);
+  }
+
+  .hero-b {
+    padding-bottom: 120px;
+  }
+  .hero-b .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .mini-dash {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    overflow: hidden;
+    box-shadow: var(--shadow-2);
+    transform: perspective(1600px) rotateY(-4deg) rotateX(3deg);
+    transform-origin: left center;
+  }
+  :global([data-animate="reduced"]) .mini-dash {
+    transform: none;
+  }
+
+  .mini-chrome {
+    height: 28px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .mini-chrome i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg-4);
+    display: block;
+  }
+  .mini-chrome .addr {
+    margin-left: 8px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--fg-3);
+  }
+
+  .mini-body {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    height: 360px;
+  }
+  .mini-side {
+    border-right: 1px solid var(--border);
+    padding: 10px 8px;
+    background: var(--bg-1);
+  }
+  .mini-side .mi {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 22px;
+    padding: 0 8px;
+    font-size: 11px;
+    color: var(--fg-2);
+    border-radius: 4px;
+  }
+  .mini-side .mi.on {
+    background: var(--bg-3);
+    color: var(--fg);
+    position: relative;
+  }
+  .mini-side .mi.on::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .mini-side .mi .ic {
+    width: 10px;
+    height: 10px;
+    color: var(--fg-3);
+  }
+  .mini-side .mi.on .ic {
+    color: var(--accent);
+  }
+  .mini-side .grp {
+    font-size: 9px;
+    color: var(--fg-3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 8px 4px;
+  }
+
+  .mini-main {
+    padding: 14px;
+    overflow: hidden;
+  }
+  .mini-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .mini-strip .c {
+    background: var(--bg-1);
+    padding: 7px 9px;
+  }
+  .mini-strip .c .l {
+    font-size: 9px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .mini-strip .c .v {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 2px;
+    letter-spacing: -0.01em;
+  }
+  .mini-strip .c .v.ok {
+    color: var(--st-completed-fg);
+  }
+  .mini-strip .c .v.err {
+    color: var(--st-failed-fg);
+  }
+  .mini-strip .c .v.act {
+    color: var(--st-active-fg);
+  }
+
+  .mini-rows {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-1);
+    overflow: hidden;
+  }
+  .mini-row {
+    display: grid;
+    grid-template-columns: 14px 1fr 40px 50px 50px 50px 60px;
+    align-items: center;
+    font-size: 11px;
+    padding: 0 10px;
+    height: 28px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .mini-row:last-child {
+    border-bottom: 0;
+  }
+  .mini-row.h {
+    color: var(--fg-3);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    background: var(--bg-1);
+    font-family: var(--font-sans);
+    height: 22px;
+  }
+  .mini-row .n {
+    font-family: var(--font-sans);
+    color: var(--fg);
+    font-weight: 500;
+  }
+  .mini-row .star {
+    color: var(--fg-4);
+  }
+  .mini-row .star.on {
+    color: #f5b700;
+  }
+  .mini-row .z {
+    color: var(--fg-3);
+  }
+  .mini-row .act {
+    color: var(--st-active-fg);
+  }
+  .mini-row .er {
+    color: var(--st-failed-fg);
+  }
+  .mini-row .sp svg {
+    display: block;
+  }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--fg-2);
+  }
+  .live-pill .d {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--st-completed-fg);
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.15);
+    animation: hero-live-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes hero-live-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /* Density override — compact reduces hero padding and min height. */
+  :global([data-density="compact"]) .hero {
+    padding: 56px 0 28px;
+    min-height: 440px;
+  }
+
+  @media (max-width: 1000px) {
+    .hero-b .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+  }
+  @media (max-width: 900px) {
+    .mini-dash {
+      overflow-x: auto;
+    }
+    .mini-body {
+      min-width: 560px;
+    }
+  }
+  @media (max-width: 640px) {
+    .hero-meta {
+      flex-wrap: wrap;
+      row-gap: 8px;
+      column-gap: 12px;
+    }
+    .hero-meta .sep {
+      display: none;
+    }
+    .hero-ctas {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .hero-ctas .btn {
+      width: 100%;
+      justify-content: center;
+    }
+    .hero-ctas :global(.install-tabbed) {
+      width: 100%;
+    }
+  }
+</style>

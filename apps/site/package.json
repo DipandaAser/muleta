@@ -1,0 +1,34 @@
+{
+  "name": "@muleta-dev/site",
+  "version": "0.0.0",
+  "description": "Marketing + docs site for muleta. Static, deployed to GitHub Pages.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "clean": "rm -rf dist .astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/svelte": "^7.0.0",
+    "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource-variable/geist-mono": "^5.2.7",
+    "@lucide/astro": "^1.8.0",
+    "@lucide/svelte": "^1.3.0",
+    "@muleta-dev/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "astro": "^5.16.0",
+    "daisyui": "^5.0.0",
+    "shiki": "^4.0.0",
+    "svelte": "^5.55.2",
+    "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^6.0.2"
+  }
+}

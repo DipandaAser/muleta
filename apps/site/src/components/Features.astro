@@ -1,0 +1,126 @@
+---
+import { Code, Plug, Shield, Users, Workflow, Zap, type Icon } from "@lucide/astro"
+
+const features: Array<{ icon: typeof Icon; title: string; body: string }> = [
+  {
+    icon: Zap,
+    title: "Real-time, not polled",
+    body:
+      "Scoped SSE streams per queue and per job to give you a real time view of how your bullmq queues are performing. Auto reconnect, no stale data, no polling.",
+  },
+  {
+    icon: Workflow,
+    title: "Flow graphs that make sense",
+    body:
+      "Visualize parent/child job relationships across queues. Click a node, see its output, inspect the failure, replay the whole tree from any point.",
+  },
+  {
+    icon: Plug,
+    title: "Plugins for what you actually use",
+    body:
+      "Slack, PagerDuty, custom job renderers, auth providers. Publish a plugin in under 50 lines — loaded at runtime, no rebuild.",
+  },
+  {
+    icon: Code,
+    title: "Embed it anywhere",
+    body:
+      "Drop <Muleta/> into your admin panel. Use your auth, your routing. Zero iframe tricks.",
+  },
+  {
+    icon: Shield,
+    title: "Self-hosted, end-to-end",
+    body:
+      "Your Redis. Your server. Your data. Your bull. Your dashboard.",
+  },
+  {
+    icon: Users,
+    title: "Built for operators",
+    body:
+      "Bulk retry failed jobs, drain a queue, promote delayed, pause workers.",
+  },
+]
+---
+
+<section class="section section-divide">
+  <div class="page">
+    <div class="section-head">
+      <div class="eyebrow"><span class="dot"></span> capabilities</div>
+      <h2>Everything you need to monitor BullMQ in production.</h2>
+      
+    </div>
+    <div class="feat-grid">
+      {
+        features.map((f, i) => {
+          const Ic = f.icon
+          return (
+            <div class="feat">
+              <div class="feat-ic">
+                <Ic size={16} />
+              </div>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+              <div class="feat-tag">{`0${i + 1}`}</div>
+            </div>
+          )
+        })
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    overflow: hidden;
+  }
+  .feat {
+    background: var(--bg-1);
+    padding: 28px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    min-height: 200px;
+  }
+  .feat .feat-ic {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-radius: var(--r-2);
+  }
+  .feat h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .feat p {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .feat .feat-tag {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-3);
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 900px) {
+    .feat-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

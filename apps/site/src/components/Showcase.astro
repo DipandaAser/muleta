@@ -1,0 +1,187 @@
+---
+import { Check, Copy } from "@lucide/astro"
+
+// Pre-tokenized "syntax highlighting" — just inline spans. Cheaper than
+// shipping a runtime highlighter and identical visual to the design.
+---
+
+<section class="section section-divide">
+  <div class="page">
+    <div class="showcase-grid">
+      <div class="showcase-copy">
+        <div class="eyebrow"><span class="dot"></span> embed</div>
+        <h3 style="margin-top: 14px">One middleware. Every queue.</h3>
+        <p>
+          muleta isn't a separate service. It's an Express/Fastify middleware that mounts at any
+          path, shares your process, your auth, and your Redis connection. Boot time: about 40ms.
+        </p>
+        <div class="bullet">
+          <Check size={14} />
+          <span><b>No container to run.</b> Lives in your app.</span>
+        </div>
+        <div class="bullet">
+          <Check size={14} />
+          <span><b>Auto-discovery.</b> Lists every queue in your Redis instance.</span>
+        </div>
+        <div class="bullet">
+          <Check size={14} />
+          <span><b>Your auth wins.</b> Reuse sessions, JWTs, RBAC — muleta calls your function.</span>
+        </div>
+        <div class="bullet">
+          <Check size={14} />
+          <span><b>Tree-shakable.</b> Load only the plugins you use.</span>
+        </div>
+      </div>
+      <div class="code-card">
+        <div class="code-head">
+          <div class="filename"><span class="dir">src/</span>app.ts</div>
+          <div class="tabs-mini">
+            <span class="t on">app.ts</span>
+            <span class="t">docker-compose.yml</span>
+          </div>
+          <div class="right-acts">
+            <button class="btn sm ghost" type="button" aria-label="Copy">
+              <Copy size={14} />
+            </button>
+          </div>
+        </div>
+        <pre class="code-body"><div><span class="ln">1</span><span><span class="k">import</span> express <span class="k">from</span> <span class="s">"express"</span>;</span></div><div><span class="ln">2</span><span><span class="k">import</span> {`{ `}<span class="fn">Queue</span>{` }`} <span class="k">from</span> <span class="s">"bullmq"</span>;</span></div><div><span class="ln">3</span><span><span class="k">import</span> {`{ `}<span class="fn">muleta</span>{` }`} <span class="k">from</span> <span class="s">"muleta"</span>;</span></div><div><span class="ln">4</span><span> </span></div><div><span class="ln">5</span><span><span class="k">const</span> <span class="fn">app</span> = <span class="fn">express</span>();</span></div><div><span class="ln">6</span><span> </span></div><div><span class="ln">7</span><span><span class="c">// Your existing BullMQ queues</span></span></div><div><span class="ln">8</span><span><span class="k">const</span> <span class="fn">emails</span>   = <span class="k">new</span> <span class="fn">Queue</span>(<span class="s">"emails"</span>,   {`{ connection: `}<span class="fn">redis</span>{` }`});</span></div><div><span class="ln">9</span><span><span class="k">const</span> <span class="fn">webhooks</span> = <span class="k">new</span> <span class="fn">Queue</span>(<span class="s">"webhooks"</span>, {`{ connection: `}<span class="fn">redis</span>{` }`});</span></div><div><span class="ln">10</span><span> </span></div><div><span class="ln">11</span><span><span class="c">// One line. That's it.</span></span></div><div><span class="ln">12</span><span><span class="fn">app</span>.<span class="fn">use</span>(<span class="s">"/admin/queues"</span>, <span class="fn">muleta</span>({`{`}</span></div><div><span class="ln">13</span><span>  queues: [<span class="fn">emails</span>, <span class="fn">webhooks</span>],</span></div><div><span class="ln">14</span><span>  auth:   (<span class="fn">req</span>) =&gt; <span class="fn">req</span>.<span class="fn">session</span>?.<span class="fn">user</span>?.role === <span class="s">"admin"</span>,</span></div><div><span class="ln">15</span><span>  theme:  <span class="s">"dark"</span>,</span></div><div><span class="ln">16</span><span>{`}`}));</span></div><div><span class="ln">17</span><span> </span></div><div><span class="ln">18</span><span><span class="fn">app</span>.<span class="fn">listen</span>(<span class="n">3000</span>);</span></div></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .code-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-3);
+    overflow: hidden;
+  }
+  .code-head {
+    height: 36px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+  .code-head .filename {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--fg-1);
+  }
+  .code-head .filename .dir {
+    color: var(--fg-3);
+  }
+  .code-head .tabs-mini {
+    display: flex;
+    gap: 2px;
+    margin-left: 10px;
+  }
+  .code-head .tabs-mini .t {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: var(--fg-3);
+    cursor: pointer;
+  }
+  .code-head .tabs-mini .t.on {
+    background: var(--bg-3);
+    color: var(--fg);
+  }
+  .code-head .right-acts {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+
+  .code-body {
+    padding: 18px 20px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--fg);
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 2;
+    counter-reset: ln;
+  }
+  /* Syntax-highlight tokens — emitted inline by the highlighter on the
+     server. Targeting them via :global() because the spans live inside
+     a static `pre` rendered with raw class names; Astro's scoping would
+     otherwise rewrite their selectors and miss them. */
+  .code-body :global(.ln) {
+    display: inline-block;
+    width: 26px;
+    color: var(--fg-4);
+    user-select: none;
+    text-align: right;
+    padding-right: 14px;
+  }
+  .code-body :global(.k) {
+    color: oklch(0.68 0.14 280);
+  }
+  .code-body :global(.s) {
+    color: var(--st-completed-fg);
+  }
+  .code-body :global(.n) {
+    color: var(--st-active-fg);
+  }
+  .code-body :global(.c) {
+    color: var(--fg-3);
+    font-style: italic;
+  }
+  .code-body :global(.fn) {
+    color: var(--accent);
+  }
+  .code-body :global(.p) {
+    color: var(--fg-2);
+  }
+  .code-body :global(.type) {
+    color: var(--st-delayed-fg);
+  }
+
+  .showcase-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  .showcase-copy h3 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
+  .showcase-copy p {
+    margin: 0 0 16px;
+    color: var(--fg-1);
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  .showcase-copy .bullet {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    color: var(--fg-1);
+    font-size: 13.5px;
+  }
+  .showcase-copy .bullet svg {
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .showcase-copy .bullet b {
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  @media (max-width: 900px) {
+    .showcase-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
