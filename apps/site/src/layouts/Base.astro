@@ -87,38 +87,6 @@ const orgLd = {
     <script type="application/ld+json" set:html={JSON.stringify(softwareLd)} is:inline />
     <script type="application/ld+json" set:html={JSON.stringify(orgLd)} is:inline />
 
-    <script is:inline>
-      window.op =
-        window.op ||
-        function () {
-          var n = []
-          return new Proxy(
-            function () {
-              arguments.length && n.push([].slice.call(arguments))
-            },
-            {
-              get: function (_t, r) {
-                return r === "q"
-                  ? n
-                  : function () {
-                      n.push([r].concat([].slice.call(arguments)))
-                    }
-              },
-              has: function (_t, r) {
-                return r === "q"
-              },
-            },
-          )
-        }
-      window.op("init", {
-        apiUrl: "https://openpanel.muleta.dev",
-        clientId: "20fc1d74-aea6-42e1-a72b-98f33dbdbae4",
-        trackScreenViews: true,
-        trackOutgoingLinks: true,
-        trackAttributes: true,
-      })
-    </script>
-    <script is:inline src="/m.js" defer async></script>
     <script is:inline defer data-domain="muleta.dev" src="https://plausible.muleta.dev/js/script.js"></script>
   </head>
   <body>

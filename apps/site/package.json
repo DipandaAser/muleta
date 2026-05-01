@@ -7,11 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "curl -fsSL https://openpanel.dev/op1.js -o public/m.js",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "typecheck": "astro check",
-    "clean": "rm -rf dist .astro public/m.js"
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
