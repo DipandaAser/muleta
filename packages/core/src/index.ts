@@ -18,5 +18,6 @@ export type {
   RedisConnectionOptions,
   RedisConnectionStatus,
   RedisHealth,
+  WorkerInfo,
 } from "./types.js"
 export { InvalidJobStateError, JobNotFoundError, REDIS_CONNECTION_STATUSES } from "./types.js"
