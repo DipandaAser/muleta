@@ -3,6 +3,7 @@
 	import { page } from "$app/state"
 	import { api, type AddJobOptions, type AddJobRequest, type Queue } from "$lib/api/client"
 	import Code from "$lib/components/code/Code.svelte"
+	import CodeEditor from "$lib/components/code/CodeEditor.svelte"
 	import JobNamePicker from "$lib/jobs/JobNamePicker.svelte"
 	import { ArrowLeft, Check, Pause, Plus } from "@lucide/svelte"
 
@@ -201,14 +202,12 @@
 						</span>
 					{/if}
 				</div>
-				<textarea
-					id="job-data"
+				<CodeEditor
 					bind:value={dataText}
-					rows="10"
-					spellcheck="false"
-					class="textarea textarea-sm font-mono-muleta text-[12px] leading-relaxed w-full"
-					class:border-error={!jsonValid}
-				></textarea>
+					lang="json"
+					height={220}
+					class={jsonValid ? "" : "muleta-editor-error"}
+				/>
 			</div>
 
 			<!-- Options -->
