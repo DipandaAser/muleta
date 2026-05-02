@@ -58,3 +58,47 @@ export const jobParamsSchema = z.object({
   name: z.string().min(1),
   id: z.string().min(1),
 })
+
+/**
+ * Subset of BullMQ `JobsOptions` accepted by the dashboard's add-job form.
+ * Caps (255-char names, 50 attempts) are sanity bounds, not auth — anyone
+ * who can reach the API can already do worse via Redis directly. They just
+ * stop fat-finger mistakes from creating pathological jobs.
+ */
+export const AddJobOptionsSchema = z
+  .object({
+    jobId: z.string().min(1).max(255).optional(),
+    priority: z.number().int().min(0).optional(),
+    attempts: z.number().int().min(1).max(50).optional(),
+    delay: z.number().int().min(0).optional(),
+    backoff: z
+      .object({
+        type: z.enum(["fixed", "exponential"]),
+        delay: z.number().int().min(0),
+      })
+      .optional(),
+    removeOnComplete: z.union([z.boolean(), z.number().int().min(0)]).optional(),
+    removeOnFail: z.union([z.boolean(), z.number().int().min(0)]).optional(),
+    repeat: z
+      .object({
+        pattern: z.string().min(1),
+        tz: z.string().optional(),
+        limit: z.number().int().positive().optional(),
+      })
+      .optional(),
+  })
+  .openapi("AddJobOptions")
+
+export const AddJobRequestSchema = z
+  .object({
+    name: z.string().min(1).max(255),
+    data: z.unknown().optional(),
+    opts: AddJobOptionsSchema.optional(),
+  })
+  .openapi("AddJobRequest")
+
+export const JobNamesResponseSchema = z
+  .object({
+    names: z.array(z.string()),
+  })
+  .openapi("JobNamesResponse")
