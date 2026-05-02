@@ -104,6 +104,20 @@ export interface GetJobsResult {
 }
 
 /**
+ * Mirrors BullMQ's auto-removal contract — what to keep when a job
+ * finishes (or fails). Three forms:
+ *   - `true`   → remove every matching job immediately
+ *   - `false`  → never remove (BullMQ's silent default)
+ *   - number   → keep last N (shorthand for `{ count: N }`)
+ *   - object   → cap by recency (`age` in seconds), count, or both. With
+ *                both set, BullMQ keeps a job as long as it's within the
+ *                last `count` AND younger than `age`.
+ *
+ * See https://docs.bullmq.io/guide/queues/auto-removal-of-jobs.
+ */
+export type KeepJobs = boolean | number | { count?: number; age?: number }
+
+/**
  * Subset of BullMQ's `JobsOptions` that muleta exposes on `addJob`. We
  * deliberately don't pass `JobsOptions` through verbatim: BullMQ accepts
  * fields like `parent`, `lifo`, `prevMillis` that don't make sense from a
@@ -120,9 +134,10 @@ export interface AddJobOptions {
   /** Delay in milliseconds before the job becomes processable. */
   delay?: number
   backoff?: { type: "fixed" | "exponential"; delay: number }
-  /** `true` keeps unbounded; a number keeps the last N. */
-  removeOnComplete?: boolean | number
-  removeOnFail?: boolean | number
+  /** Auto-removal of completed jobs — see `KeepJobs`. */
+  removeOnComplete?: KeepJobs
+  /** Auto-removal of failed jobs — see `KeepJobs`. */
+  removeOnFail?: KeepJobs
   /** Cron-style repeating schedule. BullMQ ignores `jobId` when set. */
   repeat?: { pattern: string; tz?: string; limit?: number }
 }

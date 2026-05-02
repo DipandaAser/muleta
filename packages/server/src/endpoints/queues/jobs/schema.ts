@@ -77,8 +77,29 @@ export const AddJobOptionsSchema = z
         delay: z.number().int().min(0),
       })
       .optional(),
-    removeOnComplete: z.union([z.boolean(), z.number().int().min(0)]).optional(),
-    removeOnFail: z.union([z.boolean(), z.number().int().min(0)]).optional(),
+    // KeepJobs — boolean (immediate / never), number (keep last N), or
+    // an object with `count` and/or `age` (in seconds). Mirrors the
+    // shape BullMQ accepts at https://docs.bullmq.io/guide/queues/auto-removal-of-jobs.
+    removeOnComplete: z
+      .union([
+        z.boolean(),
+        z.number().int().min(0),
+        z.object({
+          count: z.number().int().min(0).optional(),
+          age: z.number().int().min(0).optional(),
+        }),
+      ])
+      .optional(),
+    removeOnFail: z
+      .union([
+        z.boolean(),
+        z.number().int().min(0),
+        z.object({
+          count: z.number().int().min(0).optional(),
+          age: z.number().int().min(0).optional(),
+        }),
+      ])
+      .optional(),
     repeat: z
       .object({
         pattern: z.string().min(1),

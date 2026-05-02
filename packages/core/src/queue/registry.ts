@@ -8,6 +8,7 @@ import {
   type JobInfo,
   JobNotFoundError,
   type JobState,
+  type KeepJobs,
   type QueueConfig,
   type QueueCounts,
   type QueueInfo,
@@ -313,8 +314,12 @@ function toBullJobsOptions(opts: AddJobOptions | undefined): JobsOptions | undef
   if (opts.attempts !== undefined) out.attempts = opts.attempts
   if (opts.delay !== undefined) out.delay = opts.delay
   if (opts.backoff !== undefined) out.backoff = opts.backoff
-  if (opts.removeOnComplete !== undefined) out.removeOnComplete = opts.removeOnComplete
-  if (opts.removeOnFail !== undefined) out.removeOnFail = opts.removeOnFail
+  if (opts.removeOnComplete !== undefined) {
+    out.removeOnComplete = toBullKeepJobs(opts.removeOnComplete)
+  }
+  if (opts.removeOnFail !== undefined) {
+    out.removeOnFail = toBullKeepJobs(opts.removeOnFail)
+  }
   if (opts.repeat !== undefined) {
     out.repeat = {
       pattern: opts.repeat.pattern,
@@ -323,6 +328,30 @@ function toBullJobsOptions(opts: AddJobOptions | undefined): JobsOptions | undef
     }
   }
   return out
+}
+
+/**
+ * Translate muleta's loose `KeepJobs` shape into BullMQ's strict
+ * discriminated union. BullMQ accepts:
+ *   - `boolean | number`                                 (passes through)
+ *   - `{ count: number }`                                (count required)
+ *   - `{ age: number; count?: number; limit?: number }`  (age required)
+ *
+ * Our public type allows `count` and `age` to both be optional on the
+ * object form because that's what the server's zod schema parses to,
+ * and what the dashboard form naturally produces. We normalise here so
+ * BullMQ never sees an empty object — if the caller hands us
+ * `{ count: undefined, age: undefined }`, we collapse it to `true`
+ * (remove every job) which is the sensible "they meant *something*"
+ * default.
+ */
+function toBullKeepJobs(v: KeepJobs): NonNullable<JobsOptions["removeOnComplete"]> {
+  if (typeof v === "boolean" || typeof v === "number") return v
+  if (v.age !== undefined) {
+    return v.count !== undefined ? { age: v.age, count: v.count } : { age: v.age }
+  }
+  if (v.count !== undefined) return { count: v.count }
+  return true
 }
 
 /**

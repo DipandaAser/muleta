@@ -8,6 +8,7 @@ export type {
   JobInfo,
   JobProgress,
   JobState,
+  KeepJobs,
   Muleta,
   MuletaOptions,
   QueueConfig,

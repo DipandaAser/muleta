@@ -9,6 +9,14 @@
 
 	type DelayUnit = "ms" | "s" | "m"
 	type BackoffType = "fixed" | "exponential"
+	type AgeUnit = "s" | "m" | "h" | "d"
+
+	const AGE_UNIT_SECONDS: Record<AgeUnit, number> = {
+		s: 1,
+		m: 60,
+		h: 3600,
+		d: 86_400,
+	}
 
 	let { data } = $props<{ data: { jobNames: string[] } }>()
 
@@ -27,8 +35,14 @@
 	let delayUnit = $state<DelayUnit>("s")
 	let backoffType = $state<BackoffType>("exponential")
 	let backoffDelay = $state(2000)
-	let removeOnComplete = $state(true)
+	let removeOnComplete = $state(false)
+	let removeOnCompleteCount = $state<number | null>(null)
+	let removeOnCompleteAge = $state<number | null>(null)
+	let removeOnCompleteAgeUnit = $state<AgeUnit>("s")
 	let removeOnFail = $state(false)
+	let removeOnFailCount = $state<number | null>(null)
+	let removeOnFailAge = $state<number | null>(null)
+	let removeOnFailAgeUnit = $state<AgeUnit>("s")
 	let repeat = $state(false)
 	let repeatCron = $state("0 */15 * * * *")
 
@@ -47,6 +61,33 @@
 	})
 	let jsonValid = $derived(parsedData.ok)
 
+	/**
+	 * Translate the form's three knobs (count, age, age-unit) into the
+	 * shape BullMQ accepts on `removeOnComplete` / `removeOnFail`.
+	 *   - both empty       → `true`           (remove every job immediately)
+	 *   - count only       → `number`         (keep last N)
+	 *   - age only         → `{ age }`        (remove older than N seconds)
+	 *   - count + age      → `{ age, count }` (BullMQ AND-applies both caps)
+	 *
+	 * Caller still needs to gate this behind the toggle being on — when
+	 * the toggle is off we don't send the field at all (BullMQ default:
+	 * keep forever).
+	 */
+	function buildKeepJobs(
+		count: number | null,
+		age: number | null,
+		unit: AgeUnit,
+	): NonNullable<AddJobOptions["removeOnComplete"]> {
+		const hasCount = count !== null && Number.isFinite(count)
+		const hasAge = age !== null && Number.isFinite(age)
+		if (!hasCount && !hasAge) return true
+		if (hasCount && !hasAge) return Math.max(0, Math.floor(count as number))
+		const ageSec = Math.max(0, Math.floor((age as number) * AGE_UNIT_SECONDS[unit]))
+		return hasCount
+			? { age: ageSec, count: Math.max(0, Math.floor(count as number)) }
+			: { age: ageSec }
+	}
+
 	function delayMs(): number {
 		if (delay <= 0) return 0
 		if (delayUnit === "s") return delay * 1000
@@ -61,8 +102,16 @@
 		const d = delayMs()
 		if (d > 0) opts.delay = d
 		opts.backoff = { type: backoffType, delay: Number(backoffDelay) || 0 }
-		if (removeOnComplete) opts.removeOnComplete = 1000
-		if (removeOnFail) opts.removeOnFail = 5000
+		if (removeOnComplete) {
+			opts.removeOnComplete = buildKeepJobs(
+				removeOnCompleteCount,
+				removeOnCompleteAge,
+				removeOnCompleteAgeUnit,
+			)
+		}
+		if (removeOnFail) {
+			opts.removeOnFail = buildKeepJobs(removeOnFailCount, removeOnFailAge, removeOnFailAgeUnit)
+		}
 		if (repeat) opts.repeat = { pattern: repeatCron }
 		if (jobId.trim()) opts.jobId = jobId.trim()
 		return opts
@@ -133,9 +182,10 @@
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
-	<div class="flex-1 pl-10 flex flex-col lg:flex-row items-stretch gap-8 min-h-0 overflow-hidden">
+	<div
+		class="flex-1 pl-10 flex flex-col lg:flex-row items-stretch gap-8 min-h-0 overflow-hidden mb-2"
+	>
 		<div id="form-column" class="pt-5 pb-24 flex-1 min-w-0 flex flex-col gap-6 overflow-y-auto">
-			<!-- Job picker -->
 			<div class="flex flex-col gap-1.5">
 				<div class="text-[12px] text-base-content/70 flex items-center gap-1.5">
 					Pick a job
@@ -149,7 +199,6 @@
 				/>
 			</div>
 
-			<!-- Name + Job ID -->
 			<div class="flex flex-col sm:flex-row gap-4">
 				<div class="flex-2 min-w-0 flex flex-col gap-1.5">
 					<label for="job-name" class="text-[12px] text-base-content/70">
@@ -177,7 +226,6 @@
 				</div>
 			</div>
 
-			<!-- Data -->
 			<div class="flex flex-col gap-1.5">
 				<div class="flex items-center justify-between">
 					<label for="job-data" class="text-[12px] text-base-content/70 flex items-center gap-1.5">
@@ -300,24 +348,129 @@
 
 				<!-- Toggles -->
 				<div class="flex flex-col gap-2 mt-2">
-					<label class="flex items-center gap-2.5 text-[12px] cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={removeOnComplete}
-							class="toggle toggle-sm toggle-primary"
-						/>
-						<span>removeOnComplete</span>
-						<span class="text-base-content/40 text-[11px] font-mono-muleta">keep last 1000</span>
-					</label>
-					<label class="flex items-center gap-2.5 text-[12px] cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={removeOnFail}
-							class="toggle toggle-sm toggle-primary"
-						/>
-						<span>removeOnFail</span>
-						<span class="text-base-content/40 text-[11px] font-mono-muleta">keep last 5000</span>
-					</label>
+					<div class="flex flex-col gap-1.5">
+						<label class="flex items-center gap-2.5 text-[12px] cursor-pointer w-fit">
+							<input
+								type="checkbox"
+								bind:checked={removeOnComplete}
+								class="toggle toggle-sm toggle-primary"
+							/>
+							<span>removeOnComplete</span>
+						</label>
+						{#if removeOnComplete}
+							<div
+								class="ml-9 flex flex-col gap-1.5 text-[11px] text-base-content/55 font-mono-muleta"
+							>
+								<div class="flex items-center gap-1.5">
+									<span class="w-20 shrink-0">keep last</span>
+									<input
+										type="number"
+										min="0"
+										bind:value={removeOnCompleteCount}
+										placeholder="—"
+										aria-label="Number of completed jobs to keep"
+										class="input input-xs font-mono-muleta w-20"
+									/>
+									<span>jobs</span>
+								</div>
+								<div class="flex items-center gap-1.5">
+									<span class="w-20 shrink-0">older than</span>
+									<input
+										type="number"
+										min="0"
+										bind:value={removeOnCompleteAge}
+										placeholder="—"
+										aria-label="Maximum age of completed jobs to keep"
+										class="input input-xs font-mono-muleta w-20"
+									/>
+									<div class="join border border-base-300 rounded-field overflow-hidden">
+										{#each ["s", "m", "h", "d"] as const as u (u)}
+											{@const active = removeOnCompleteAgeUnit === u}
+											<button
+												type="button"
+												aria-label="Age unit: {u}"
+												class="join-item px-2 py-0.5 text-[10px] transition-colors {active
+													? 'bg-base-300 text-base-content'
+													: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
+												onclick={() => (removeOnCompleteAgeUnit = u)}
+											>
+												{u}
+											</button>
+										{/each}
+									</div>
+								</div>
+								<span class="text-base-content/35 text-[10.5px]">
+									both empty → remove every job · either filled → narrows the keep rule
+								</span>
+							</div>
+						{:else}
+							<span class="ml-9 text-base-content/40 text-[11px] font-mono-muleta">
+								keep all jobs forever
+							</span>
+						{/if}
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<label class="flex items-center gap-2.5 text-[12px] cursor-pointer w-fit">
+							<input
+								type="checkbox"
+								bind:checked={removeOnFail}
+								class="toggle toggle-sm toggle-primary"
+							/>
+							<span>removeOnFail</span>
+						</label>
+						{#if removeOnFail}
+							<div
+								class="ml-9 flex flex-col gap-1.5 text-[11px] text-base-content/55 font-mono-muleta"
+							>
+								<div class="flex items-center gap-1.5">
+									<span class="w-20 shrink-0">keep last</span>
+									<input
+										type="number"
+										min="0"
+										bind:value={removeOnFailCount}
+										placeholder="—"
+										aria-label="Number of failed jobs to keep"
+										class="input input-xs font-mono-muleta w-20"
+									/>
+									<span>jobs</span>
+								</div>
+								<div class="flex items-center gap-1.5">
+									<span class="w-20 shrink-0">older than</span>
+									<input
+										type="number"
+										min="0"
+										bind:value={removeOnFailAge}
+										placeholder="—"
+										aria-label="Maximum age of failed jobs to keep"
+										class="input input-xs font-mono-muleta w-20"
+									/>
+									<div class="join border border-base-300 rounded-field overflow-hidden">
+										{#each ["s", "m", "h", "d"] as const as u (u)}
+											{@const active = removeOnFailAgeUnit === u}
+											<button
+												type="button"
+												aria-label="Age unit: {u}"
+												class="join-item px-2 py-0.5 text-[10px] transition-colors {active
+													? 'bg-base-300 text-base-content'
+													: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
+												onclick={() => (removeOnFailAgeUnit = u)}
+											>
+												{u}
+											</button>
+										{/each}
+									</div>
+								</div>
+								<span class="text-base-content/35 text-[10.5px]">
+									both empty → remove every job · either filled → narrows the keep rule
+								</span>
+							</div>
+						{:else}
+							<span class="ml-9 text-base-content/40 text-[11px] font-mono-muleta">
+								keep all jobs forever
+							</span>
+						{/if}
+					</div>
 					<label class="flex items-center gap-2.5 text-[12px] cursor-pointer">
 						<input type="checkbox" bind:checked={repeat} class="toggle toggle-sm toggle-primary" />
 						<span>Repeat on cron</span>
@@ -402,7 +555,7 @@
 
 	<!-- Footer actions -->
 	<div
-		class="fixed bottom-0 left-58 right-0 border-t border-base-300 bg-base-100/95 backdrop-blur px-10 py-3 flex items-center gap-3 z-40"
+		class="fixed bottom-0 left-58 right-0 border-t border-base-300 bg-base-100/95 backdrop-blur px-10 py-2 flex items-center gap-3 z-40"
 	>
 		<div class="font-mono-muleta text-[11px] text-base-content/50 flex items-center gap-2">
 			<kbd class="kbd kbd-xs">⌘</kbd><kbd class="kbd kbd-xs">↵</kbd>
