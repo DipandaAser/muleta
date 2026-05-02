@@ -3,7 +3,7 @@
 	import type { Worker } from "$lib/api/client"
 	import WorkerRow from "$lib/components/WorkerRow.svelte"
 	import { isStale } from "$lib/workers"
-	import { RefreshCw, Server, TriangleAlert } from "@lucide/svelte"
+	import { RefreshCw, TriangleAlert } from "@lucide/svelte"
 	import type { PageProps } from "./$types"
 
 	type Filter = "all" | "online" | "stale"
@@ -26,9 +26,6 @@
 	})
 
 	let hostCount = $derived.by(() => {
-		// `addr` looks like `host:port`; strip the port to count distinct
-		// hosts. BullMQ's CLIENT LIST gives one row per worker connection,
-		// so multiple workers on one host collapse here.
 		const hosts = new Set<string>()
 		for (const w of workers) {
 			const host = w.addr.includes(":") ? w.addr.slice(0, w.addr.lastIndexOf(":")) : w.addr
@@ -62,31 +59,23 @@
 	]
 </script>
 
-<div class="px-10 pt-8 pb-12 w-full">
-	<!-- Header -->
-	<div class="flex items-end gap-4 flex-wrap mb-6">
-		<div>
-			<h1 class="m-0 text-[22px] font-semibold tracking-tight flex items-center gap-2.5">
-				<span class="text-base-content/80 flex">
-					<Server size={20} />
-				</span>
-				Workers
-			</h1>
-			<div class="text-base-content/55 text-[12px] mt-1 font-mono-muleta flex items-center gap-2">
-				<span class="text-base-content/80">{counts.online}</span>
-				<span>online</span>
-				{#if counts.stale > 0}
-					<span class="text-base-content/30">·</span>
-					<span class="text-error">{counts.stale}</span>
-					<span>stale</span>
-				{/if}
-				{#if hostCount > 0}
-					<span class="text-base-content/30">·</span>
-					<span>across</span>
-					<span class="text-base-content/80">{hostCount}</span>
-					<span>{hostCount === 1 ? "host" : "hosts"}</span>
-				{/if}
-			</div>
+<div class="pt-6 pb-12">
+	<!-- Sub-header -->
+	<div class="flex items-end gap-4 flex-wrap mb-4">
+		<div class="text-base-content/55 text-[12px] font-mono-muleta flex items-center gap-2">
+			<span class="text-base-content/80">{counts.online}</span>
+			<span>online</span>
+			{#if counts.stale > 0}
+				<span class="text-base-content/30">·</span>
+				<span class="text-error">{counts.stale}</span>
+				<span>stale</span>
+			{/if}
+			{#if hostCount > 0}
+				<span class="text-base-content/30">·</span>
+				<span>across</span>
+				<span class="text-base-content/80">{hostCount}</span>
+				<span>{hostCount === 1 ? "host" : "hosts"}</span>
+			{/if}
 		</div>
 		<div class="ml-auto flex items-center gap-2">
 			<div class="join border border-base-300 rounded-field overflow-hidden">
@@ -135,9 +124,9 @@
 			class="text-[12px] text-base-content/50 px-4 py-12 border border-base-300 border-dashed rounded text-center"
 		>
 			{#if workers.length === 0}
-				No workers connected.
+				No workers connected to this queue.
 				<span class="font-mono-muleta text-base-content/40">
-					Start a BullMQ Worker against any registered queue to see it here.
+					Start a BullMQ Worker against this queue to see it here.
 				</span>
 			{:else}
 				No workers match the
@@ -148,7 +137,7 @@
 	{:else}
 		<div class="flex flex-col rounded border border-base-300 overflow-hidden">
 			{#each filtered as w (w.id)}
-				<WorkerRow worker={w} />
+				<WorkerRow worker={w} showQueue={false} />
 			{/each}
 		</div>
 	{/if}
