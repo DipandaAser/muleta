@@ -90,6 +90,18 @@ async function bootstrap(): Promise<typeof MonacoNs> {
     import("@shikijs/monaco"),
     getHighlighter(),
   ])
+
+  // shikiToMonaco only bridges languages that are already registered in
+  // Monaco. Monaco-editor's bundled language services auto-register the
+  // common ones (json, ts, js, css, html), but we explicitly register
+  // anything else we ship from the Shiki side — otherwise the bridge
+  // silently skips them and the editor falls back to plain text.
+  for (const lang of ["bash", "shell", "sh", "yaml", "diff", "tsx", "jsx"]) {
+    if (!monaco.languages.getLanguages().some((l) => l.id === lang)) {
+      monaco.languages.register({ id: lang })
+    }
+  }
+
   shikiToMonaco(highlighter, monaco)
 
   return monaco

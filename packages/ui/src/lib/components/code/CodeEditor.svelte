@@ -51,6 +51,12 @@
 		getMonaco().then((m) => {
 			if (cancelled || !host) return
 			monaco = m
+			// Force the custom theme onto Monaco's global theme slot before
+			// creating the editor. The `theme` option in `editor.create()`
+			// alone proved unreliable when Monaco's built-in 'vs' / 'vs-dark'
+			// theme is the active one at the time of creation — explicit
+			// `setTheme()` is the documented way to swap.
+			m.editor.setTheme(THEME_FOR[theme.value])
 			editor = m.editor.create(target, {
 				value,
 				language: lang,

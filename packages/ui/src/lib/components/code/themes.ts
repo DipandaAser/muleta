@@ -27,7 +27,10 @@ const DARK = {
   fn: "#9c8de0", // shares the boolean violet — same conceptual "language" tone
   type: "#a8b2c4", // --color-state-waiting (cool blue-grey)
   regex: "#ff6b7a", // --color-error
-  bg: "#00000000", // transparent — let the wrapper's bg-base-200 show through
+  // Concrete bg — Monaco's renderer doesn't handle the `#00000000` transparent
+  // value the way Shiki does. The `<Code>` component still overrides via CSS,
+  // so this only matters when Monaco consumes the theme.
+  bg: "#0a0a0b", // --color-base-100 (dark)
 }
 
 // ─── muleta-light hex values (mirror :muleta-light) ────────────────────────
@@ -43,7 +46,7 @@ const LIGHT = {
   fn: "#5a3fb0",
   type: "#4a5568",
   regex: "#b6202f",
-  bg: "#00000000",
+  bg: "#fafaf8", // --color-base-100 (light)
 }
 
 /**
