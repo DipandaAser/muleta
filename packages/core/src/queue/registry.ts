@@ -1,6 +1,7 @@
-import { type Job, Queue } from "bullmq"
+import { type Job, type JobsOptions, Queue } from "bullmq"
 import type { Redis } from "ioredis"
 import {
+  type AddJobOptions,
   type GetJobsResult,
   InvalidJobStateError,
   type JobDetail,
@@ -12,6 +13,7 @@ import {
   type QueueInfo,
   type QueueRegistry,
 } from "../types.js"
+import { createJobNameIndex } from "./jobNameIndex.js"
 
 const COUNTED_STATES = [
   "waiting",
@@ -23,6 +25,23 @@ const COUNTED_STATES = [
   "prioritized",
   "waiting-children",
 ] as const
+
+/**
+ * States we scan when refreshing the job-name index. Skipped: `paused`
+ * (per-queue flag, doesn't have a dedicated job list) and `waiting-children`
+ * (rare, expensive to enumerate via `getJobs`).
+ */
+const NAME_INDEX_STATES: JobState[] = [
+  "completed",
+  "failed",
+  "active",
+  "delayed",
+  "waiting",
+  "prioritized",
+]
+
+/** Cap per queue per refresh — bounds Redis cost on huge queues. */
+const NAME_INDEX_SCAN_LIMIT = 200
 
 export interface InternalQueueRegistry extends QueueRegistry {
   /**
@@ -66,6 +85,7 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
   const configs = new Map<string, QueueConfig>()
   const sources = new Map<string, Source>()
   const queues = new Map<string, Queue>()
+  const jobNames = createJobNameIndex()
 
   async function closeQueue(name: string): Promise<void> {
     const q = queues.get(name)
@@ -241,13 +261,68 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
       await job.promote()
     },
 
+    async addJob(name, jobName, data, opts) {
+      const { queue } = getOrCreate(name)
+      const job = await queue.add(jobName, data ?? {}, toBullJobsOptions(opts))
+      jobNames.record(jobName)
+      return jobToInfo(job)
+    },
+
+    getJobNames() {
+      return jobNames.list()
+    },
+
+    async refreshJobNames() {
+      // Walk every registered queue and fold the latest names into the index.
+      // Sequential rather than parallel: keeps Redis from being hit with N
+      // simultaneous getJobs calls when a deployment has lots of queues.
+      for (const name of configs.keys()) {
+        try {
+          const { queue } = getOrCreate(name)
+          const jobs = await queue.getJobs(NAME_INDEX_STATES, 0, NAME_INDEX_SCAN_LIMIT - 1, false)
+          for (const job of jobs) {
+            if (job?.name) jobNames.record(job.name)
+          }
+        } catch (err) {
+          // A single bad queue shouldn't prevent the rest from refreshing —
+          // log and move on.
+          console.error(`[muleta] refreshJobNames failed for "${name}":`, err)
+        }
+      }
+    },
+
     async close() {
       await Promise.all([...queues.values()].map((queue) => queue.close()))
       queues.clear()
       configs.clear()
       sources.clear()
+      jobNames.clear()
     },
   }
+}
+
+/**
+ * Translate the muleta-flavoured `AddJobOptions` into BullMQ's `JobsOptions`.
+ * Keeps the public core API stable even if BullMQ's option shape drifts.
+ */
+function toBullJobsOptions(opts: AddJobOptions | undefined): JobsOptions | undefined {
+  if (!opts) return undefined
+  const out: JobsOptions = {}
+  if (opts.jobId !== undefined) out.jobId = opts.jobId
+  if (opts.priority !== undefined) out.priority = opts.priority
+  if (opts.attempts !== undefined) out.attempts = opts.attempts
+  if (opts.delay !== undefined) out.delay = opts.delay
+  if (opts.backoff !== undefined) out.backoff = opts.backoff
+  if (opts.removeOnComplete !== undefined) out.removeOnComplete = opts.removeOnComplete
+  if (opts.removeOnFail !== undefined) out.removeOnFail = opts.removeOnFail
+  if (opts.repeat !== undefined) {
+    out.repeat = {
+      pattern: opts.repeat.pattern,
+      ...(opts.repeat.tz !== undefined ? { tz: opts.repeat.tz } : {}),
+      ...(opts.repeat.limit !== undefined ? { limit: opts.repeat.limit } : {}),
+    }
+  }
+  return out
 }
 
 /**

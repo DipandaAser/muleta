@@ -1,5 +1,6 @@
 export { createMuleta } from "./muleta.js"
 export type {
+  AddJobOptions,
   GetJobsOptions,
   GetJobsResult,
   HealthStatus,

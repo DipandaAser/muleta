@@ -275,6 +275,92 @@ describe("QueueRegistry", () => {
       )
     })
   })
+
+  describe("addJob + job-name index", () => {
+    it("addJob() enqueues a job and returns its info", async () => {
+      const info = await muleta.queues.addJob(
+        "emails",
+        "send-welcome",
+        { to: "ada@example.com" },
+        { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+      )
+
+      expect(info).toMatchObject({
+        name: "send-welcome",
+        state: "waiting",
+        data: { to: "ada@example.com" },
+        attempts: 3,
+      })
+
+      // The job is observable via getJobs.
+      const listed = await muleta.queues.getJobs("emails", { states: ["waiting"] })
+      expect(listed.jobs.map((j) => j.id)).toContain(info.id)
+    })
+
+    it("addJob() respects priority by routing to the prioritized list", async () => {
+      const info = await muleta.queues.addJob("emails", "send", {}, { priority: 5 })
+      const detail = await muleta.queues.getJob("emails", info.id)
+      expect(detail?.state).toBe("prioritized")
+      expect(detail?.priority).toBe(5)
+    })
+
+    it("addJob() respects delay by routing to the delayed list", async () => {
+      const info = await muleta.queues.addJob("emails", "send", {}, { delay: 60_000 })
+      const detail = await muleta.queues.getJob("emails", info.id)
+      expect(detail?.state).toBe("delayed")
+      expect(detail?.delay).toBe(60_000)
+    })
+
+    it("addJob() honours a caller-provided jobId", async () => {
+      const info = await muleta.queues.addJob("emails", "send", {}, { jobId: "custom-id" })
+      expect(info.id).toBe("custom-id")
+    })
+
+    it("addJob() throws when the queue isn't registered", async () => {
+      await expect(muleta.queues.addJob("ghost", "send", {})).rejects.toThrowError(/not registered/)
+    })
+
+    it("addJob() defaults missing data to {}", async () => {
+      const info = await muleta.queues.addJob("emails", "ping", undefined)
+      const detail = await muleta.queues.getJob("emails", info.id)
+      expect(detail?.data).toEqual({})
+    })
+
+    it("addJob() records the job name in the index", async () => {
+      await muleta.queues.addJob("emails", "send-welcome", {})
+      await muleta.queues.addJob("emails", "send-receipt", {})
+      const names = muleta.queues.getJobNames()
+      expect(names).toContain("send-welcome")
+      expect(names).toContain("send-receipt")
+    })
+
+    it("getJobNames() de-duplicates repeated names", async () => {
+      await muleta.queues.addJob("emails", "send", { i: 1 })
+      await muleta.queues.addJob("emails", "send", { i: 2 })
+      const names = muleta.queues.getJobNames()
+      expect(names.filter((n) => n === "send")).toHaveLength(1)
+    })
+
+    it("refreshJobNames() picks up names enqueued outside of muleta", async () => {
+      // Producer (outside muleta) drops a job in — index doesn't know about
+      // it yet because addJob() is the only path that auto-records.
+      await producer.add("external-job", { ext: true })
+      expect(muleta.queues.getJobNames()).not.toContain("external-job")
+
+      await muleta.queues.refreshJobNames()
+      expect(muleta.queues.getJobNames()).toContain("external-job")
+    })
+
+    it("getJobNames() spans every registered queue (global, not per-queue)", async () => {
+      // Add a second queue and enqueue a uniquely-named job on each — the
+      // index should surface both names regardless of which queue we ask.
+      muleta.queues.register({ name: "reports" })
+      await muleta.queues.addJob("emails", "email-only-job", {})
+      await muleta.queues.addJob("reports", "report-only-job", {})
+      const names = muleta.queues.getJobNames()
+      expect(names).toEqual(expect.arrayContaining(["email-only-job", "report-only-job"]))
+    })
+  })
 })
 
 describe("queue autodiscovery", () => {

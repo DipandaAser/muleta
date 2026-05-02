@@ -24,13 +24,22 @@ export async function createMuleta(opts: MuletaOptions): Promise<Muleta> {
   const prefixList = [...prefixes]
 
   await registry.discover(prefixList)
+  // Initial best-effort populate of the job-name index. Failures here aren't
+  // fatal — the GET /job-names endpoint will lazily refresh on first read if
+  // the index is empty.
+  registry.refreshJobNames().catch((err) => {
+    console.error("[muleta] initial job-name refresh failed:", err)
+  })
 
   let closed = false
   const timer = setInterval(() => {
     if (closed) return
-    registry.discover(prefixList).catch((err) => {
-      console.error("[muleta] queue discovery failed:", err)
-    })
+    registry
+      .discover(prefixList)
+      .then(() => registry.refreshJobNames())
+      .catch((err) => {
+        console.error("[muleta] periodic discover/refresh failed:", err)
+      })
   }, DISCOVERY_INTERVAL_MS)
   timer.unref()
 
