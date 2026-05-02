@@ -1,61 +1,18 @@
 <script lang="ts">
 	import { page } from "$app/state"
 	import { Bell, Moon, Search, Sun } from "@lucide/svelte"
-	import { NAV } from "./nav"
+	import { buildCrumbs } from "./crumb-registry"
 	import { theme } from "./theme.svelte"
 
-	const NAV_ITEMS = NAV.flatMap((section) => section.items)
-
-	// The nav item whose route matches the current path. Guard on href so
-	// disabled placeholders (href === undefined) don't match everything via
-	// startsWith("").
-	let activeNavItem = $derived(
-		NAV_ITEMS.find((it) => it.href && page.url.pathname.startsWith(it.href)) ?? null,
-	)
-
-	// First crumb uses the nav item's label; subsequent crumbs are the
-	// remaining path segments. Each crumb also knows its cumulative href
-	// so we can link back up the hierarchy.
-	type Crumb = { label: string; href: string }
-
 	/**
-	 * Pretty labels for static path segments we know about. Dynamic segments
-	 * (queue names, job ids) stay as-is unless covered by a specific rule.
+	 * Crumbs come from the build-time registry: each `+layout.ts` /
+	 * `+page.ts` exports a `_crumb` function, the registry walks the
+	 * current route ID prefix-by-prefix and asks each registered fn for
+	 * its crumb. Sync, no async, no segment-string heuristics.
+	 *
+	 * See `./crumb-registry.ts` for the discovery + walk logic.
 	 */
-	function crumbLabel(seg: string, i: number, segs: string[]): string {
-		if (segs[0] === "queues") {
-			// /queues/:name/jobs/:id[/tab] — capitalize the `jobs` section and
-			// prefix the id so it reads as a job reference.
-			if (i === 2 && seg === "jobs") return "Jobs"
-			if (i === 3 && segs[2] === "jobs") return `#${seg}`
-			// /queues/:name/overview — surface the overview section name cleanly.
-			if (i === 2 && seg === "overview") return "Overview"
-		}
-		return seg
-	}
-
-	let crumbs = $derived.by<Crumb[]>(() => {
-		const segs = page.url.pathname.split("/").filter(Boolean)
-		if (segs.length === 0) {
-			return [
-				{
-					label: activeNavItem?.label ?? "Queues",
-					href: activeNavItem?.href ?? "/",
-				},
-			]
-		}
-
-		// On the job detail route `/queues/:name/jobs/:id/<tab>`, the tab suffix
-		// is navigated via the in-page tab strip — don't surface it as a crumb.
-		const isJobDetail =
-			segs[0] === "queues" && segs.length >= 4 && segs[2] === "jobs" && segs[3] !== undefined
-		const trimmed = isJobDetail ? segs.slice(0, 4) : segs
-
-		return trimmed.map((seg, i) => ({
-			label: i === 0 ? (activeNavItem?.label ?? seg) : crumbLabel(seg, i, trimmed),
-			href: `/${trimmed.slice(0, i + 1).join("/")}`,
-		}))
-	})
+	let crumbs = $derived(buildCrumbs(page.route.id, page.params, page.data))
 </script>
 
 <header
@@ -66,21 +23,20 @@
 		<ul>
 			{#each crumbs as c, i (c.href)}
 				{@const isLast = i === crumbs.length - 1}
-				{@const showIcon = i === 0 && activeNavItem !== null}
 				<li>
 					{#if isLast}
 						<span class="inline-flex gap-2 items-center">
-							{#if showIcon && activeNavItem}
-								{@const Ico = activeNavItem.icon}
-								<Ico size={14} class="text-base-content/60 {activeNavItem.iconClass ?? ''}" />
+							{#if c.icon}
+								{@const Ico = c.icon}
+								<Ico size={14} class="text-base-content/60 {c.iconClass ?? ''}" />
 							{/if}
 							{c.label}
 						</span>
 					{:else}
 						<a href={c.href} class="inline-flex gap-2 items-center">
-							{#if showIcon && activeNavItem}
-								{@const Ico = activeNavItem.icon}
-								<Ico size={14} class="text-base-content/60 {activeNavItem.iconClass ?? ''}" />
+							{#if c.icon}
+								{@const Ico = c.icon}
+								<Ico size={14} class="text-base-content/60 {c.iconClass ?? ''}" />
 							{/if}
 							{c.label}
 						</a>

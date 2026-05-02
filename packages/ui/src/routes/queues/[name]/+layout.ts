@@ -1,4 +1,5 @@
 import { api, type Queue } from "$lib/api/client"
+import type { CrumbFn } from "$lib/shell/crumbs"
 import type { LayoutLoad } from "./$types"
 
 export const load: LayoutLoad = async ({ params, fetch: _fetch }) => {
@@ -14,3 +15,7 @@ export const load: LayoutLoad = async ({ params, fetch: _fetch }) => {
   }
   return { name: params.name, queue, error }
 }
+
+export const _crumb: CrumbFn = ({ params, data }) => ({
+  label: data.queue?.displayName ?? params.name,
+})
