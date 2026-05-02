@@ -24,9 +24,6 @@
 	let name = $derived(data.name)
 	let queueError = $derived(data.error)
 
-	// Tab ids map to subroutes under /queues/[name]/<id>. `overview` is the
-	// bare /queues/[name] path (no sub-segment); "Coming soon" ones have no
-	// matching route file yet.
 	const TABS: Array<{
 		id: string
 		label: string
@@ -45,7 +42,7 @@
 			},
 		},
 		{ id: "schedulers", label: "Schedulers", disabled: true },
-		{ id: "workers", label: "Workers", disabled: true },
+		{ id: "workers", label: "Workers", disabled: false },
 		{ id: "flows", label: "Flows", disabled: true },
 		{ id: "metrics", label: "Metrics", disabled: true },
 	]
