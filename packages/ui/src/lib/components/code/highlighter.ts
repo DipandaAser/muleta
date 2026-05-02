@@ -1,4 +1,5 @@
 import type { Highlighter } from "shiki"
+import { muletaDark, muletaLight } from "./themes"
 
 /**
  * Languages bundled with the dashboard's Shiki highlighter. Adding to this
@@ -22,14 +23,14 @@ export const SUPPORTED_LANGS = [
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number]
 
 /**
- * Themes mapped to muleta's daisyUI theme ids. Picking the GitHub themes
- * because they're well-tuned for both light and dark and use a colour
- * palette that doesn't clash with the muleta accent. Swappable later if
- * we hand-roll a theme.
+ * Maps daisyUI theme ids to the matching Shiki theme name. Both the
+ * dark and light variants are hand-rolled in `./themes.ts` against
+ * muleta's daisyUI palette, so syntax-highlighted output sits alongside
+ * the dashboard's surface and accent colours without a palette break.
  */
 export const THEME_FOR = {
-  "muleta-dark": "github-dark",
-  "muleta-light": "github-light",
+  "muleta-dark": "muleta-dark",
+  "muleta-light": "muleta-light",
 } as const
 
 let instance: Promise<Highlighter> | null = null
@@ -43,7 +44,7 @@ export function getHighlighter(): Promise<Highlighter> {
   if (!instance) {
     instance = import("shiki").then(({ createHighlighter }) =>
       createHighlighter({
-        themes: ["github-dark", "github-light"],
+        themes: [muletaDark, muletaLight],
         langs: [...SUPPORTED_LANGS],
       }),
     )
