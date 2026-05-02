@@ -29,6 +29,9 @@ export type HealthStatus = InferResponseType<typeof api.api.v1.health.$get, 200>
 
 export type JobNamesResponse = InferResponseType<typeof api.api.v1.jobs.names.$get, 200>
 
+export type ListWorkersResponse = InferResponseType<typeof api.api.v1.workers.$get, 200>
+export type Worker = ListWorkersResponse["workers"][number]
+
 /**
  * Body shape for `POST /api/v1/queues/:name/jobs`. Inferred from the route so
  * the form's outgoing payload can never drift from the server schema.
