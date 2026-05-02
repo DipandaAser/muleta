@@ -18,6 +18,12 @@ export default defineConfig({
     // Tailwind v4 ships as a Vite plugin; daisyUI is loaded as a CSS
     // `@plugin` directive from src/styles/theme.css.
     plugins: [tailwindcss()],
+    // @lucide/svelte ships source `.svelte` files. Vite's esbuild
+    // prebundle has no Svelte loader, so it errors on `<lucide>/dist/Icon.svelte`
+    // unless the package is left to the Svelte vite plugin at runtime.
+    optimizeDeps: {
+      exclude: ["@lucide/svelte"],
+    },
   },
   build: {
     // Inline small stylesheets, hoist big ones — best for first-paint
