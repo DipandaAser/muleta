@@ -29,7 +29,8 @@
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@lucide/svelte": "^1.8.0",
     "@muleta-dev/server": "workspace:*",
-    "hono": "^4.12.14"
+    "hono": "^4.12.14",
+    "shiki": "^4.0.2"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

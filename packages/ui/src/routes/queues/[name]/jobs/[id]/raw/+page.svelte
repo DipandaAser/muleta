@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state"
 	import type { JobDetail } from "$lib/api/client"
+	import Code from "$lib/components/code/Code.svelte"
 	import { highlightJson, prettyJson } from "$lib/jobs/format"
 	import { Copy } from "@lucide/svelte"
 
@@ -23,9 +24,6 @@
 				<Copy size={11} /> Copy
 			</button>
 		</div>
-		<pre
-			class="mt-2 rounded-lg border border-base-300 bg-base-200 px-4 py-3 text-[11.5px] font-mono-muleta overflow-x-auto"><code
-				>{@html highlightJson(job)}</code
-			></pre>
+		<Code code={prettyJson(job)} lang="json" showCopy={true} />
 	</section>
 {/if}

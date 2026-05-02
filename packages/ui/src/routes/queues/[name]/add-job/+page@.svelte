@@ -2,6 +2,7 @@
 	import { goto } from "$app/navigation"
 	import { page } from "$app/state"
 	import { api, type AddJobOptions, type AddJobRequest, type Queue } from "$lib/api/client"
+	import Code from "$lib/components/code/Code.svelte"
 	import JobNamePicker from "$lib/jobs/JobNamePicker.svelte"
 	import { ArrowLeft, Check, Pause, Plus } from "@lucide/svelte"
 
@@ -354,8 +355,7 @@
 					what will execute
 				</span>
 			</div>
-			<pre
-				class="font-mono-muleta text-[11.5px] leading-relaxed bg-base-200 border border-base-300 rounded-field p-3 overflow-x-auto whitespace-pre">{preview}</pre>
+			<Code code={preview} lang="ts" />
 
 			<dl class="flex flex-col gap-1.5 text-[12px] mt-2">
 				<div class="flex items-baseline gap-3">
