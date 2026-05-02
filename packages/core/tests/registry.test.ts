@@ -361,6 +361,80 @@ describe("QueueRegistry", () => {
       expect(names).toEqual(expect.arrayContaining(["email-only-job", "report-only-job"]))
     })
   })
+
+  describe("getWorkers", () => {
+    it("returns no workers when none are connected", async () => {
+      const workers = await muleta.queues.getWorkers()
+      expect(workers).toEqual([])
+    })
+
+    it("lists a connected worker tagged with its queue", async () => {
+      const worker = new Worker(
+        "emails",
+        async () => {
+          // Idle worker — never resolves a job, just stays connected.
+        },
+        {
+          connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+          name: "emails-worker-1",
+        },
+      )
+      try {
+        await worker.waitUntilReady()
+        const workers = await muleta.queues.getWorkers()
+        const emailsWorker = workers.find((w) => w.queue === "emails")
+        expect(emailsWorker).toBeDefined()
+        expect(emailsWorker?.name).toBe("emails-worker-1")
+        expect(emailsWorker?.id).toBeTruthy()
+        expect(emailsWorker?.addr).toMatch(/:\d+$/)
+        expect(emailsWorker?.ageSeconds).toBeGreaterThanOrEqual(0)
+        expect(emailsWorker?.idleSeconds).toBeGreaterThanOrEqual(0)
+      } finally {
+        await worker.close()
+      }
+    })
+
+    it("returns null name for anonymous workers (no `name` option)", async () => {
+      const worker = new Worker("emails", async () => {}, {
+        connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+      })
+      try {
+        await worker.waitUntilReady()
+        const workers = await muleta.queues.getWorkers()
+        const emailsWorker = workers.find((w) => w.queue === "emails")
+        expect(emailsWorker).toBeDefined()
+        expect(emailsWorker?.name).toBeNull()
+      } finally {
+        await worker.close()
+      }
+    })
+
+    it("aggregates workers across multiple registered queues", async () => {
+      muleta.queues.register({ name: "reports" })
+      const reportsProducer = new Queue("reports", { connection: producerConnection })
+      const emailsWorker = new Worker("emails", async () => {}, {
+        connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+        name: "e-1",
+      })
+      const reportsWorker = new Worker("reports", async () => {}, {
+        connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+        name: "r-1",
+      })
+      try {
+        await Promise.all([emailsWorker.waitUntilReady(), reportsWorker.waitUntilReady()])
+        const workers = await muleta.queues.getWorkers()
+        const queues = new Set(workers.map((w) => w.queue))
+        expect(queues.has("emails")).toBe(true)
+        expect(queues.has("reports")).toBe(true)
+        const names = workers.map((w) => w.name)
+        expect(names).toEqual(expect.arrayContaining(["e-1", "r-1"]))
+      } finally {
+        await Promise.all([emailsWorker.close(), reportsWorker.close()])
+        await reportsProducer.obliterate({ force: true }).catch(() => {})
+        await reportsProducer.close()
+      }
+    })
+  })
 })
 
 describe("queue autodiscovery", () => {

@@ -1,6 +1,6 @@
 import type { z } from "@hono/zod-openapi"
 import { createMuleta, type Muleta } from "@muleta-dev/core"
-import { Queue } from "bullmq"
+import { Queue, Worker } from "bullmq"
 import { hc } from "hono/client"
 import { Redis } from "ioredis"
 import { GenericContainer, type StartedTestContainer } from "testcontainers"
@@ -352,6 +352,89 @@ describe("createHandler", () => {
       expect(res.status).toBe(200)
       const body = (await res.json()) as { names: string[] }
       expect(body.names).toContain("external-name")
+    })
+  })
+
+  describe("GET /api/v1/workers", () => {
+    it("returns an empty list when no workers are connected", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/workers")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        workers: Array<{ name: string | null; queue: string }>
+      }
+      expect(body.workers).toEqual([])
+    })
+
+    it("surfaces a connected worker tagged with its queue and parsed name", async () => {
+      const worker = new Worker(
+        "emails",
+        async () => {
+          // Idle worker — never resolves a job, just stays connected.
+        },
+        {
+          connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+          name: "api-worker-1",
+        },
+      )
+      try {
+        await worker.waitUntilReady()
+        const handler = createHandler({ endpoints: createEndpoints(muleta) })
+        const res = await handler.request("/api/v1/workers")
+        expect(res.status).toBe(200)
+        const body = (await res.json()) as {
+          workers: Array<{
+            id: string
+            name: string | null
+            queue: string
+            ageSeconds: number
+            idleSeconds: number
+          }>
+        }
+        const w = body.workers.find((w) => w.queue === "emails")
+        expect(w).toBeDefined()
+        expect(w?.name).toBe("api-worker-1")
+        expect(w?.id).toBeTruthy()
+        expect(w?.ageSeconds).toBeGreaterThanOrEqual(0)
+        expect(w?.idleSeconds).toBeGreaterThanOrEqual(0)
+      } finally {
+        await worker.close()
+      }
+    })
+
+    it("flattens workers across multiple registered queues", async () => {
+      // Adds a second queue post-construction so we exercise the loop in
+      // `getWorkers` rather than just the single-queue path. Mirrors the
+      // core registry's multi-queue test at the HTTP boundary so a future
+      // accidental per-queue-only response would fail here too.
+      muleta.queues.register({ name: "reports" })
+      const reportsProducer = new Queue("reports", { connection: producerConnection })
+      const emailsWorker = new Worker("emails", async () => {}, {
+        connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+        name: "api-emails-1",
+      })
+      const reportsWorker = new Worker("reports", async () => {}, {
+        connection: new Redis(redisUrl, { maxRetriesPerRequest: null }),
+        name: "api-reports-1",
+      })
+      try {
+        await Promise.all([emailsWorker.waitUntilReady(), reportsWorker.waitUntilReady()])
+        const handler = createHandler({ endpoints: createEndpoints(muleta) })
+        const res = await handler.request("/api/v1/workers")
+        expect(res.status).toBe(200)
+        const body = (await res.json()) as {
+          workers: Array<{ name: string | null; queue: string }>
+        }
+        const queues = new Set(body.workers.map((w) => w.queue))
+        expect(queues.has("emails")).toBe(true)
+        expect(queues.has("reports")).toBe(true)
+        const names = body.workers.map((w) => w.name)
+        expect(names).toEqual(expect.arrayContaining(["api-emails-1", "api-reports-1"]))
+      } finally {
+        await Promise.all([emailsWorker.close(), reportsWorker.close()])
+        await reportsProducer.obliterate({ force: true }).catch(() => {})
+        await reportsProducer.close()
+      }
     })
   })
 })
