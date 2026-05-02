@@ -1,5 +1,5 @@
 import type { RouteId } from "$app/types"
-import { routeHref, type Crumb, type CrumbContext, type CrumbFn } from "./crumbs"
+import { type Crumb, type CrumbContext, type CrumbFn, routeHref } from "./crumbs"
 
 /**
  * Registry of `_crumb` functions discovered at build time via Vite's
