@@ -1,18 +1,10 @@
 <script lang="ts">
 	import { page } from "$app/state"
 	import type { JobDetail } from "$lib/api/client"
+	import Code from "$lib/components/code/Code.svelte"
 	import { byteSize, highlightJson, prettyJson } from "$lib/jobs/format"
-	import { Copy } from "@lucide/svelte"
 
 	let job = $derived(page.data.job as JobDetail | null)
-
-	async function copy(text: string) {
-		try {
-			await navigator.clipboard.writeText(text)
-		} catch {
-			// clipboard perms vary by browser; swallow silently
-		}
-	}
 </script>
 
 {#if job}
@@ -20,21 +12,10 @@
 		<div class="flex items-center justify-between">
 			<h2 class="text-[14px] font-semibold m-0">Job data</h2>
 			<div class="flex items-center gap-2 text-[11px] text-base-content/50 font-mono-muleta">
-				<span>application/json · {byteSize(job.data)}</span>
-				<button
-					type="button"
-					class="btn btn-xs btn-ghost"
-					onclick={() => copy(prettyJson(job?.data))}
-				>
-					<Copy size={11} /> Copy
-				</button>
-				<button type="button" class="btn btn-xs btn-ghost" disabled>Edit</button>
+				<span>Size: {byteSize(job.data)}</span>
 			</div>
 		</div>
-		<pre
-			class="mt-2 rounded-lg border border-base-300 bg-base-200 px-4 py-3 text-[12px] font-mono-muleta overflow-x-auto"><code
-				>{@html highlightJson(job.data)}</code
-			></pre>
+		<Code code={prettyJson(job.data)} lang="json" />
 
 		<h2 class="mt-6 text-[14px] font-semibold m-0 flex items-center justify-between">
 			Return value
@@ -49,10 +30,7 @@
 			{/if}
 		</h2>
 		{#if job.state === "completed"}
-			<pre
-				class="mt-2 rounded-lg border border-base-300 bg-base-200 px-4 py-3 text-[12px] font-mono-muleta overflow-x-auto"><code
-					>{@html highlightJson(job.returnvalue)}</code
-				></pre>
+			<Code code={prettyJson(job.returnvalue)} lang="json" showCopy={true} />
 		{:else}
 			<div
 				class="mt-2 rounded-lg border border-base-300 bg-base-200 px-4 py-3 text-[12px] text-base-content/40 font-mono-muleta"

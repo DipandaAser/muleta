@@ -113,7 +113,9 @@
 			{#if copied}
 				<Check size={12} />
 			{:else}
-				<Copy size={12} />
+				<span class="flex gap-1">
+					<Copy size={12} /> Copy
+				</span>
 			{/if}
 		</button>
 	{/if}
