@@ -100,12 +100,36 @@ export const AddJobOptionsSchema = z
         }),
       ])
       .optional(),
+    // BullMQ accepts EITHER a cron `pattern` OR a fixed `every` interval
+    // (in ms). Refining at the boundary catches "neither" / "both" before
+    // the request hits BullMQ — those would either error at enqueue time
+    // or silently ignore one half.
     repeat: z
       .object({
-        pattern: z.string().min(1),
+        pattern: z.string().min(1).optional(),
+        every: z.number().int().positive().optional(),
         tz: z.string().optional(),
         limit: z.number().int().positive().optional(),
+        immediately: z.boolean().optional(),
+        // ISO 8601 strings; BullMQ feeds them to cron-parser which handles
+        // both forms. Empty/omitted = unbounded in that direction.
+        startDate: z.iso.datetime({ offset: true }).optional(),
+        endDate: z.iso.datetime({ offset: true }).optional(),
       })
+      .refine((v) => Boolean(v.pattern) !== Boolean(v.every), {
+        message: "repeat must specify exactly one of `pattern` or `every`",
+        path: ["pattern"],
+      })
+      .refine(
+        (v) =>
+          !v.startDate ||
+          !v.endDate ||
+          new Date(v.startDate).getTime() < new Date(v.endDate).getTime(),
+        {
+          message: "endDate must be after startDate",
+          path: ["endDate"],
+        },
+      )
       .optional(),
   })
   .openapi("AddJobOptions")

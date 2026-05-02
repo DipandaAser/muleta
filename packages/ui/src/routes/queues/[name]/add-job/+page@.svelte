@@ -12,12 +12,22 @@
 	type DelayUnit = "ms" | "s" | "m"
 	type BackoffType = "fixed" | "exponential"
 	type AgeUnit = "s" | "m" | "h" | "d"
+	type RepeatStrategy = "pattern" | "every"
 
 	const AGE_UNIT_SECONDS: Record<AgeUnit, number> = {
 		s: 1,
 		m: 60,
 		h: 3600,
 		d: 86_400,
+	}
+
+	/** Same units as the age selector but pre-multiplied to milliseconds —
+	 * BullMQ's `every` field is ms, not seconds. */
+	const EVERY_UNIT_MS: Record<AgeUnit, number> = {
+		s: 1000,
+		m: 60_000,
+		h: 3_600_000,
+		d: 86_400_000,
 	}
 
 	let { data } = $props<{ data: { jobNames: string[] } }>()
@@ -46,7 +56,19 @@
 	let removeOnFailAge = $state<number | null>(null)
 	let removeOnFailAgeUnit = $state<AgeUnit>("s")
 	let repeat = $state(false)
-	let repeatCron = $state("0 */15 * * * *")
+	let repeatStrategy = $state<RepeatStrategy>("pattern")
+	let repeatPattern = $state("0 */15 * * * *")
+	let repeatEvery = $state<number | null>(null)
+	let repeatEveryUnit = $state<AgeUnit>("m")
+	let repeatLimit = $state<number | null>(null)
+	let repeatImmediately = $state(false)
+	/**
+	 * `<input type="datetime-local">` produces strings shaped like
+	 * `2026-05-04T10:30` (no seconds, no timezone — local time). We hold
+	 * the raw string here and convert to ISO at submit time.
+	 */
+	let repeatStartDate = $state("")
+	let repeatEndDate = $state("")
 
 	let submitting = $state(false)
 	let submitted = $state(false)
@@ -66,8 +88,8 @@
 	let cronExplanation = $derived.by<
 		{ ok: true; text: string } | { ok: false; error: string } | null
 	>(() => {
-		if (!repeat) return null
-		const pattern = repeatCron.trim()
+		if (!repeat || repeatStrategy !== "pattern") return null
+		const pattern = repeatPattern.trim()
 		if (!pattern) return null
 		try {
 			const text = cronstrue.toString(pattern, {
@@ -81,8 +103,8 @@
 	})
 
 	let cronNextRun = $derived.by<Date | null>(() => {
-		if (!repeat) return null
-		const pattern = repeatCron.trim()
+		if (!repeat || repeatStrategy !== "pattern") return null
+		const pattern = repeatPattern.trim()
 		if (!pattern) return null
 		try {
 			const interval = CronExpressionParser.parse(pattern)
@@ -90,6 +112,20 @@
 		} catch {
 			return null
 		}
+	})
+
+	/**
+	 * Computed `every` interval in milliseconds. Empty / zero / negative
+	 * input collapses to `null`, which means the `every` strategy is
+	 * incomplete and we omit `repeat` from the request entirely. The
+	 * preview pane reflects this — only a valid value materialises in
+	 * the outgoing payload.
+	 */
+	let repeatEveryMs = $derived.by<number | null>(() => {
+		if (!repeat || repeatStrategy !== "every") return null
+		if (repeatEvery === null || !Number.isFinite(repeatEvery)) return null
+		const ms = Math.max(0, Math.floor(repeatEvery * EVERY_UNIT_MS[repeatEveryUnit]))
+		return ms > 0 ? ms : null
 	})
 
 	function formatNextRun(d: Date): string {
@@ -127,6 +163,20 @@
 			: { age: ageSec }
 	}
 
+	/**
+	 * Normalise the raw `<input type="datetime-local">` value (local time,
+	 * no seconds, e.g. `"2026-05-04T10:30"`) to a UTC ISO string the
+	 * server schema and BullMQ both accept. Empty / unparseable input ⇒
+	 * `null` so callers can omit the field instead of sending an empty
+	 * string.
+	 */
+	function toIsoOrNull(local: string): string | null {
+		const trimmed = local.trim()
+		if (!trimmed) return null
+		const parsed = new Date(trimmed)
+		return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+	}
+
 	function delayMs(): number {
 		if (delay <= 0) return 0
 		if (delayUnit === "s") return delay * 1000
@@ -151,7 +201,34 @@
 		if (removeOnFail) {
 			opts.removeOnFail = buildKeepJobs(removeOnFailCount, removeOnFailAge, removeOnFailAgeUnit)
 		}
-		if (repeat) opts.repeat = { pattern: repeatCron }
+		if (repeat) {
+			const r: NonNullable<AddJobOptions["repeat"]> = {}
+			if (repeatStrategy === "pattern") {
+				const trimmed = repeatPattern.trim()
+				// Only emit `pattern` when the user has typed *something* —
+				// sending `pattern: ""` would fail server-side validation.
+				if (trimmed) r.pattern = trimmed
+				// `immediately` is cron-only per BullMQ semantics; the field
+				// is hidden from the markup when strategy === "every".
+				if (repeatImmediately) r.immediately = true
+			} else if (repeatEveryMs !== null) {
+				r.every = repeatEveryMs
+			}
+			if (repeatLimit !== null && Number.isFinite(repeatLimit) && repeatLimit > 0) {
+				r.limit = Math.floor(repeatLimit)
+			}
+			// Convert local-datetime strings to UTC ISO at the boundary —
+			// the server schema validates ISO format and BullMQ stores the
+			// values via `Date.parse(...)`. Empty input ⇒ omit the field.
+			const startIso = toIsoOrNull(repeatStartDate)
+			const endIso = toIsoOrNull(repeatEndDate)
+			if (startIso) r.startDate = startIso
+			if (endIso) r.endDate = endIso
+			// Skip the field entirely when the user hasn't completed the
+			// chosen strategy — sending `repeat: {}` would either fail
+			// validation or trigger BullMQ default-fallback behaviour.
+			if (r.pattern || r.every) opts.repeat = r
+		}
 		if (jobId.trim()) opts.jobId = jobId.trim()
 		return opts
 	})
@@ -510,57 +587,188 @@
 							</span>
 						{/if}
 					</div>
-					<label class="flex items-center gap-2.5 text-[12px] cursor-pointer">
+					<label class="flex items-center gap-2.5 text-[12px] cursor-pointer w-fit">
 						<input type="checkbox" bind:checked={repeat} class="toggle toggle-sm toggle-primary" />
-						<span>Repeat on cron</span>
+						<span>Repeat</span>
 					</label>
 					{#if repeat}
-						<div class="ml-9 flex flex-col gap-1.5">
-							<input
-								type="text"
-								bind:value={repeatCron}
-								placeholder="0 */15 * * * *"
-								aria-label="Cron pattern (5- or 6-field)"
-								aria-describedby="cron-explanation"
-								class="input input-sm font-mono-muleta max-w-xs"
-								class:border-error={cronExplanation?.ok === false}
-								spellcheck="false"
-							/>
+						<div class="ml-9 flex flex-col gap-2.5">
 							<!--
-								Mirrors crontab.guru's at-a-glance plain-English summary.
-								We render the message regardless of validity — green/muted
-								when cronstrue parses the pattern, red when it can't —
-								so the user never has to click "validate" to know whether
-								they got the syntax right.
+								BullMQ's two repeat strategies are mutually exclusive — `pattern`
+								and `every` can't both be set. The segmented control swaps the
+								body underneath while keeping the parent layout stable.
+								See https://docs.bullmq.io/guide/job-schedulers/repeat-strategies.
 							-->
-							{#if cronExplanation}
-								<div
-									id="cron-explanation"
-									class="text-[12px] flex items-start gap-1.5 max-w-md"
-									class:text-base-content={cronExplanation.ok}
-									class:text-error={!cronExplanation.ok}
-								>
-									{#if cronExplanation.ok}
-										<span class="text-base-content/40">→</span>
-										<span class="italic">"{cronExplanation.text}"</span>
-									{:else}
-										<span>⚠</span>
-										<span class="font-mono-muleta text-[11px]">{cronExplanation.error}</span>
-									{/if}
+							<div class="flex items-center gap-2">
+								<span class="text-[11px] text-base-content/55 font-mono-muleta">strategy</span>
+								<div class="join border border-base-300 rounded-field overflow-hidden">
+									{#each [{ id: "pattern" as const, label: "cron pattern" }, { id: "every" as const, label: "every interval" }] as opt (opt.id)}
+										{@const active = repeatStrategy === opt.id}
+										<button
+											type="button"
+											class="join-item px-2.5 py-0.5 text-[11px] transition-colors {active
+												? 'bg-base-300 text-base-content'
+												: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
+											onclick={() => (repeatStrategy = opt.id)}
+										>
+											{opt.label}
+										</button>
+									{/each}
 								</div>
-							{/if}
-							{#if cronNextRun}
-								<div class="text-[11px] flex items-center gap-1.5 text-base-content/55">
-									<span>next at</span>
-									<span class="font-mono-muleta tnum text-base-content/80">
-										{formatNextRun(cronNextRun)}
+							</div>
+
+							{#if repeatStrategy === "pattern"}
+								<div class="flex flex-col gap-1.5">
+									<input
+										type="text"
+										bind:value={repeatPattern}
+										placeholder="0 */15 * * * *"
+										aria-label="Cron pattern (5- or 6-field)"
+										aria-describedby="cron-explanation"
+										class="input input-sm font-mono-muleta max-w-xs"
+										class:border-error={cronExplanation?.ok === false}
+										spellcheck="false"
+									/>
+									<!--
+										Mirrors crontab.guru's at-a-glance plain-English summary.
+										We render the message regardless of validity — green/muted
+										when cronstrue parses the pattern, red when it can't —
+										so the user never has to click "validate" to know whether
+										they got the syntax right.
+									-->
+									{#if cronExplanation}
+										<div
+											id="cron-explanation"
+											class="text-[12px] flex items-start gap-1.5 max-w-md"
+											class:text-base-content={cronExplanation.ok}
+											class:text-error={!cronExplanation.ok}
+										>
+											{#if cronExplanation.ok}
+												<span class="text-base-content/40">→</span>
+												<span class="italic">"{cronExplanation.text}"</span>
+											{:else}
+												<span>⚠</span>
+												<span class="font-mono-muleta text-[11px]">
+													{cronExplanation.error}
+												</span>
+											{/if}
+										</div>
+									{/if}
+									{#if cronNextRun}
+										<div class="text-[11px] flex items-center gap-1.5 text-base-content/55">
+											<span>next at</span>
+											<span class="font-mono-muleta tnum text-base-content/80">
+												{formatNextRun(cronNextRun)}
+											</span>
+										</div>
+									{/if}
+									<label class="flex items-center gap-2 text-[11px] cursor-pointer w-fit">
+										<input
+											type="checkbox"
+											bind:checked={repeatImmediately}
+											class="toggle toggle-xs toggle-primary"
+										/>
+										<span class="text-base-content/55 font-mono-muleta">
+											fire immediately on add
+										</span>
+									</label>
+								</div>
+							{:else}
+								<!-- Fixed-interval strategy — `every` is in milliseconds when
+								     it lands in BullMQ's RepeatOptions; the unit selector
+								     just multiplies for convenience. -->
+								<div
+									class="flex flex-col gap-1.5 text-[11px] text-base-content/55 font-mono-muleta"
+								>
+									<div class="flex items-center gap-1.5">
+										<span class="w-16 shrink-0">every</span>
+										<input
+											type="number"
+											min="1"
+											bind:value={repeatEvery}
+											placeholder="—"
+											aria-label="Repeat interval"
+											class="input input-xs font-mono-muleta w-20"
+										/>
+										<div class="join border border-base-300 rounded-field overflow-hidden">
+											{#each ["s", "m", "h", "d"] as const as u (u)}
+												{@const active = repeatEveryUnit === u}
+												<button
+													type="button"
+													aria-label="Interval unit: {u}"
+													class="join-item px-2 py-0.5 text-[10px] transition-colors {active
+														? 'bg-base-300 text-base-content'
+														: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
+													onclick={() => (repeatEveryUnit = u)}
+												>
+													{u}
+												</button>
+											{/each}
+										</div>
+									</div>
+									{#if repeatEveryMs !== null}
+										<span class="text-base-content/40 ml-17">
+											= {repeatEveryMs.toLocaleString()} ms
+										</span>
+									{/if}
+									<!--
+										BullMQ runs `every` jobs immediately on add and only
+										waits the interval before subsequent fires
+										(job-scheduler.js warns if you set `immediately: true`
+										here). That's why this strategy doesn't get a "fire
+										immediately" toggle — it's already on by definition.
+									-->
+									<span class="text-base-content/40 ml-17">
+										fires immediately, then waits the interval between subsequent runs
 									</span>
 								</div>
 							{/if}
+
+							<!--
+								Common to both strategies — `limit` caps total executions
+								and the date pair bounds the schedule. `startDate` /
+								`endDate` come from cron-parser via BullMQ's RepeatOptions
+								and apply to both `pattern` and `every`.
+							-->
+							<div class="flex flex-col gap-1.5 text-[11px] text-base-content/55 font-mono-muleta">
+								<div class="flex items-center gap-1.5">
+									<span class="w-16 shrink-0">max runs</span>
+									<input
+										type="number"
+										min="1"
+										bind:value={repeatLimit}
+										placeholder="∞"
+										aria-label="Maximum number of executions"
+										class="input input-xs font-mono-muleta w-20"
+									/>
+									<span class="text-base-content/40">empty = unlimited</span>
+								</div>
+								<div class="flex items-center gap-1.5">
+									<span class="w-16 shrink-0">start at</span>
+									<input
+										type="datetime-local"
+										bind:value={repeatStartDate}
+										aria-label="Schedule start date — empty to start now"
+										class="input input-xs font-mono-muleta"
+									/>
+									<span class="text-base-content/40">empty = now</span>
+								</div>
+								<div class="flex items-center gap-1.5">
+									<span class="w-16 shrink-0">end at</span>
+									<input
+										type="datetime-local"
+										bind:value={repeatEndDate}
+										aria-label="Schedule end date — empty for no end"
+										class="input input-xs font-mono-muleta"
+									/>
+									<span class="text-base-content/40">empty = no end</span>
+								</div>
+							</div>
+
 							{#if jobId.trim()}
 								<span class="text-[11px] text-base-content/50">
 									BullMQ ignores Job ID for repeating jobs — it derives a deterministic id from the
-									pattern.
+									schedule.
 								</span>
 							{/if}
 						</div>

@@ -138,8 +138,34 @@ export interface AddJobOptions {
   removeOnComplete?: KeepJobs
   /** Auto-removal of failed jobs — see `KeepJobs`. */
   removeOnFail?: KeepJobs
-  /** Cron-style repeating schedule. BullMQ ignores `jobId` when set. */
-  repeat?: { pattern: string; tz?: string; limit?: number }
+  /**
+   * Repeating schedule. Mutually-exclusive strategies:
+   *   - `pattern` — cron-style expression (5 or 6 fields)
+   *   - `every`   — fixed millisecond interval
+   *
+   * Plus optional knobs: `tz` (cron only), `limit` (cap on total
+   * executions), `immediately` (cron only, fires once on add).
+   *
+   * BullMQ ignores `jobId` when this field is set — it derives a
+   * deterministic id from the schedule.
+   *
+   * See https://docs.bullmq.io/guide/job-schedulers/repeat-options.
+   */
+  repeat?: {
+    pattern?: string
+    every?: number
+    tz?: string
+    limit?: number
+    immediately?: boolean
+    /**
+     * Schedule bounds — ISO 8601 strings on the wire. BullMQ accepts
+     * `Date | string | number` and forwards the value to cron-parser via
+     * its inherited `ParserOptions`. Works with both `pattern` and
+     * `every` strategies.
+     */
+    startDate?: string
+    endDate?: string
+  }
 }
 
 export interface QueueRegistry {

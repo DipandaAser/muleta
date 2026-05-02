@@ -321,10 +321,23 @@ function toBullJobsOptions(opts: AddJobOptions | undefined): JobsOptions | undef
     out.removeOnFail = toBullKeepJobs(opts.removeOnFail)
   }
   if (opts.repeat !== undefined) {
+    // BullMQ's `RepeatOptions` is mutually-exclusive between `pattern`
+    // and `every` — building the object with only the fields the caller
+    // actually set keeps both BullMQ and the schema validator happy.
+    // `startDate` / `endDate` come over the wire as ISO strings; convert
+    // here because BullMQ stores them via `Date.parse(...)` and we want
+    // any failure to surface at registry boundary instead of inside
+    // BullMQ's job-scheduler.
     out.repeat = {
-      pattern: opts.repeat.pattern,
+      ...(opts.repeat.pattern !== undefined ? { pattern: opts.repeat.pattern } : {}),
+      ...(opts.repeat.every !== undefined ? { every: opts.repeat.every } : {}),
       ...(opts.repeat.tz !== undefined ? { tz: opts.repeat.tz } : {}),
       ...(opts.repeat.limit !== undefined ? { limit: opts.repeat.limit } : {}),
+      ...(opts.repeat.immediately !== undefined ? { immediately: opts.repeat.immediately } : {}),
+      ...(opts.repeat.startDate !== undefined
+        ? { startDate: new Date(opts.repeat.startDate) }
+        : {}),
+      ...(opts.repeat.endDate !== undefined ? { endDate: new Date(opts.repeat.endDate) } : {}),
     }
   }
   return out

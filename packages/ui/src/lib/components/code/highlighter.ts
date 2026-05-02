@@ -18,7 +18,7 @@ export const SUPPORTED_LANGS = [
   "diff",
   "html",
   "css",
-  "shell"
+  "shell",
 ] as const
 
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number]
