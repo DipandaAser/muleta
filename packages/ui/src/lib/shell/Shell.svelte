@@ -21,7 +21,7 @@
 	<div class="flex flex-col flex-1 min-w-0 overflow-hidden">
 		<Topbar />
 		<ConnectionBanner />
-		<main class="flex-1 overflow-auto relative">
+		<main class="flex-1 overflow-auto relative min-w-full min-h-full">
 			{@render children()}
 		</main>
 	</div>

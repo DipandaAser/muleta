@@ -56,7 +56,6 @@
 
 	function isActive(tabId: string): boolean {
 		const path = page.url.pathname
-		if (tabId === "overview") return path === `/queues/${name}` || path === `/queues/${name}/`
 		return path.startsWith(`/queues/${name}/${tabId}`)
 	}
 
@@ -92,7 +91,7 @@
 		</div>
 	{/if}
 
-	<div class="px-10 pt-8 max-w-400">
+	<div class="px-10 pt-8 min-w-full">
 		<!-- header -->
 		<div class="flex items-start gap-4">
 			<div>
@@ -116,9 +115,9 @@
 				</div>
 			</div>
 			<div class="ml-auto flex items-center gap-2">
-				<button type="button" class="btn btn-sm btn-ghost" disabled>
+				<a href="/queues/{name}/add-job" class="btn btn-sm btn-ghost">
 					<Plus size={13} /> Add job
-				</button>
+				</a>
 				<button type="button" class="btn btn-sm btn-ghost" disabled>
 					<Pause size={13} /> Pause
 				</button>

@@ -94,7 +94,7 @@
 	let isStale = $derived(error !== null && queues.length > 0)
 </script>
 
-<div class="flex flex-col min-h-full">
+<div class="flex flex-col min-h-full min-w-full">
 	<!-- Error banner: matches design loading-JOB_STATES.html §02 (hard failure) -->
 	{#if error}
 		<div
@@ -120,7 +120,7 @@
 		</div>
 	{/if}
 
-	<div class="px-10 py-8 max-w-400" class:opacity-40={isStale}>
+	<div class="px-10 py-8 min-w-full" class:opacity-40={isStale}>
 		<!-- header -->
 		<div class="flex items-end gap-6 mb-8">
 			<div>
