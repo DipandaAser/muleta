@@ -1,4 +1,5 @@
 import { api, type Job } from "$lib/api/client"
+import type { CrumbFn } from "$lib/shell/crumbs"
 import type { PageLoad } from "./$types"
 
 interface Preview {
@@ -40,3 +41,7 @@ export const load: PageLoad = async ({ params }) => {
 
   return { recentFailed, recentActive }
 }
+
+export const _crumb: CrumbFn = () => ({
+  label: "Overview",
+})

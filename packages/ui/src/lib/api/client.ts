@@ -1,5 +1,5 @@
 import type { Handler } from "@muleta-dev/server"
-import { hc, type InferResponseType } from "hono/client"
+import { hc, type InferRequestType, type InferResponseType } from "hono/client"
 
 /**
  * Base URL for the muleta API. Same-origin in both dev (Vite proxy) and
@@ -26,6 +26,17 @@ export type JobDetail = InferResponseType<
 >
 
 export type HealthStatus = InferResponseType<typeof api.api.v1.health.$get, 200>
+
+export type JobNamesResponse = InferResponseType<typeof api.api.v1.jobs.names.$get, 200>
+
+/**
+ * Body shape for `POST /api/v1/queues/:name/jobs`. Inferred from the route so
+ * the form's outgoing payload can never drift from the server schema.
+ */
+export type AddJobRequest = InferRequestType<
+  (typeof api.api.v1.queues)[":name"]["jobs"]["$post"]
+>["json"]
+export type AddJobOptions = NonNullable<AddJobRequest["opts"]>
 
 export type JobState = Job["state"]
 

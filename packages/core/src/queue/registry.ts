@@ -1,17 +1,20 @@
-import { type Job, Queue } from "bullmq"
+import { type Job, type JobsOptions, Queue } from "bullmq"
 import type { Redis } from "ioredis"
 import {
+  type AddJobOptions,
   type GetJobsResult,
   InvalidJobStateError,
   type JobDetail,
   type JobInfo,
   JobNotFoundError,
   type JobState,
+  type KeepJobs,
   type QueueConfig,
   type QueueCounts,
   type QueueInfo,
   type QueueRegistry,
 } from "../types.js"
+import { createJobNameIndex } from "./jobNameIndex.js"
 
 const COUNTED_STATES = [
   "waiting",
@@ -23,6 +26,23 @@ const COUNTED_STATES = [
   "prioritized",
   "waiting-children",
 ] as const
+
+/**
+ * States we scan when refreshing the job-name index. Skipped: `paused`
+ * (per-queue flag, doesn't have a dedicated job list) and `waiting-children`
+ * (rare, expensive to enumerate via `getJobs`).
+ */
+const NAME_INDEX_STATES: JobState[] = [
+  "completed",
+  "failed",
+  "active",
+  "delayed",
+  "waiting",
+  "prioritized",
+]
+
+/** Cap per queue per refresh — bounds Redis cost on huge queues. */
+const NAME_INDEX_SCAN_LIMIT = 200
 
 export interface InternalQueueRegistry extends QueueRegistry {
   /**
@@ -66,6 +86,7 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
   const configs = new Map<string, QueueConfig>()
   const sources = new Map<string, Source>()
   const queues = new Map<string, Queue>()
+  const jobNames = createJobNameIndex()
 
   async function closeQueue(name: string): Promise<void> {
     const q = queues.get(name)
@@ -241,13 +262,109 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
       await job.promote()
     },
 
+    async addJob(name, jobName, data, opts) {
+      const { queue } = getOrCreate(name)
+      const job = await queue.add(jobName, data ?? {}, toBullJobsOptions(opts))
+      jobNames.record(jobName)
+      return jobToInfo(job)
+    },
+
+    getJobNames() {
+      return jobNames.list()
+    },
+
+    async refreshJobNames() {
+      // Walk every registered queue and fold the latest names into the index.
+      // Sequential rather than parallel: keeps Redis from being hit with N
+      // simultaneous getJobs calls when a deployment has lots of queues.
+      for (const name of configs.keys()) {
+        try {
+          const { queue } = getOrCreate(name)
+          const jobs = await queue.getJobs(NAME_INDEX_STATES, 0, NAME_INDEX_SCAN_LIMIT - 1, false)
+          for (const job of jobs) {
+            if (job?.name) jobNames.record(job.name)
+          }
+        } catch (err) {
+          // A single bad queue shouldn't prevent the rest from refreshing —
+          // log and move on.
+          console.error(`[muleta] refreshJobNames failed for "${name}":`, err)
+        }
+      }
+    },
+
     async close() {
       await Promise.all([...queues.values()].map((queue) => queue.close()))
       queues.clear()
       configs.clear()
       sources.clear()
+      jobNames.clear()
     },
   }
+}
+
+/**
+ * Translate the muleta-flavoured `AddJobOptions` into BullMQ's `JobsOptions`.
+ * Keeps the public core API stable even if BullMQ's option shape drifts.
+ */
+function toBullJobsOptions(opts: AddJobOptions | undefined): JobsOptions | undefined {
+  if (!opts) return undefined
+  const out: JobsOptions = {}
+  if (opts.jobId !== undefined) out.jobId = opts.jobId
+  if (opts.priority !== undefined) out.priority = opts.priority
+  if (opts.attempts !== undefined) out.attempts = opts.attempts
+  if (opts.delay !== undefined) out.delay = opts.delay
+  if (opts.backoff !== undefined) out.backoff = opts.backoff
+  if (opts.removeOnComplete !== undefined) {
+    out.removeOnComplete = toBullKeepJobs(opts.removeOnComplete)
+  }
+  if (opts.removeOnFail !== undefined) {
+    out.removeOnFail = toBullKeepJobs(opts.removeOnFail)
+  }
+  if (opts.repeat !== undefined) {
+    // BullMQ's `RepeatOptions` is mutually-exclusive between `pattern`
+    // and `every` — building the object with only the fields the caller
+    // actually set keeps both BullMQ and the schema validator happy.
+    // `startDate` / `endDate` come over the wire as ISO strings; convert
+    // here because BullMQ stores them via `Date.parse(...)` and we want
+    // any failure to surface at registry boundary instead of inside
+    // BullMQ's job-scheduler.
+    out.repeat = {
+      ...(opts.repeat.pattern !== undefined ? { pattern: opts.repeat.pattern } : {}),
+      ...(opts.repeat.every !== undefined ? { every: opts.repeat.every } : {}),
+      ...(opts.repeat.tz !== undefined ? { tz: opts.repeat.tz } : {}),
+      ...(opts.repeat.limit !== undefined ? { limit: opts.repeat.limit } : {}),
+      ...(opts.repeat.immediately !== undefined ? { immediately: opts.repeat.immediately } : {}),
+      ...(opts.repeat.startDate !== undefined
+        ? { startDate: new Date(opts.repeat.startDate) }
+        : {}),
+      ...(opts.repeat.endDate !== undefined ? { endDate: new Date(opts.repeat.endDate) } : {}),
+    }
+  }
+  return out
+}
+
+/**
+ * Translate muleta's loose `KeepJobs` shape into BullMQ's strict
+ * discriminated union. BullMQ accepts:
+ *   - `boolean | number`                                 (passes through)
+ *   - `{ count: number }`                                (count required)
+ *   - `{ age: number; count?: number; limit?: number }`  (age required)
+ *
+ * Our public type allows `count` and `age` to both be optional on the
+ * object form because that's what the server's zod schema parses to,
+ * and what the dashboard form naturally produces. We normalise here so
+ * BullMQ never sees an empty object — if the caller hands us
+ * `{ count: undefined, age: undefined }`, we collapse it to `true`
+ * (remove every job) which is the sensible "they meant *something*"
+ * default.
+ */
+function toBullKeepJobs(v: KeepJobs): NonNullable<JobsOptions["removeOnComplete"]> {
+  if (typeof v === "boolean" || typeof v === "number") return v
+  if (v.age !== undefined) {
+    return v.count !== undefined ? { age: v.age, count: v.count } : { age: v.age }
+  }
+  if (v.count !== undefined) return { count: v.count }
+  return true
 }
 
 /**

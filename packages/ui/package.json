@@ -29,7 +29,12 @@
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@lucide/svelte": "^1.8.0",
     "@muleta-dev/server": "workspace:*",
-    "hono": "^4.12.14"
+    "@shikijs/monaco": "^4.0.2",
+    "cron-parser": "^5.5.0",
+    "cronstrue": "^3.14.0",
+    "hono": "^4.12.14",
+    "monaco-editor": "^0.55.1",
+    "shiki": "^4.0.2"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

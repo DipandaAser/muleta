@@ -103,6 +103,71 @@ export interface GetJobsResult {
   total: number
 }
 
+/**
+ * Mirrors BullMQ's auto-removal contract — what to keep when a job
+ * finishes (or fails). Three forms:
+ *   - `true`   → remove every matching job immediately
+ *   - `false`  → never remove (BullMQ's silent default)
+ *   - number   → keep last N (shorthand for `{ count: N }`)
+ *   - object   → cap by recency (`age` in seconds), count, or both. With
+ *                both set, BullMQ keeps a job as long as it's within the
+ *                last `count` AND younger than `age`.
+ *
+ * See https://docs.bullmq.io/guide/queues/auto-removal-of-jobs.
+ */
+export type KeepJobs = boolean | number | { count?: number; age?: number }
+
+/**
+ * Subset of BullMQ's `JobsOptions` that muleta exposes on `addJob`. We
+ * deliberately don't pass `JobsOptions` through verbatim: BullMQ accepts
+ * fields like `parent`, `lifo`, `prevMillis` that don't make sense from a
+ * dashboard form, and re-exporting BullMQ types would couple the public
+ * core API to BullMQ's release cadence.
+ */
+export interface AddJobOptions {
+  /** Caller-provided job id. BullMQ generates one if omitted. */
+  jobId?: string
+  /** Lower number = higher priority. 0 (the default) means no priority. */
+  priority?: number
+  /** Total attempts including the first try. Defaults to 1 in BullMQ. */
+  attempts?: number
+  /** Delay in milliseconds before the job becomes processable. */
+  delay?: number
+  backoff?: { type: "fixed" | "exponential"; delay: number }
+  /** Auto-removal of completed jobs — see `KeepJobs`. */
+  removeOnComplete?: KeepJobs
+  /** Auto-removal of failed jobs — see `KeepJobs`. */
+  removeOnFail?: KeepJobs
+  /**
+   * Repeating schedule. Mutually-exclusive strategies:
+   *   - `pattern` — cron-style expression (5 or 6 fields)
+   *   - `every`   — fixed millisecond interval
+   *
+   * Plus optional knobs: `tz` (cron only), `limit` (cap on total
+   * executions), `immediately` (cron only, fires once on add).
+   *
+   * BullMQ ignores `jobId` when this field is set — it derives a
+   * deterministic id from the schedule.
+   *
+   * See https://docs.bullmq.io/guide/job-schedulers/repeat-options.
+   */
+  repeat?: {
+    pattern?: string
+    every?: number
+    tz?: string
+    limit?: number
+    immediately?: boolean
+    /**
+     * Schedule bounds — ISO 8601 strings on the wire. BullMQ accepts
+     * `Date | string | number` and forwards the value to cron-parser via
+     * its inherited `ParserOptions`. Works with both `pattern` and
+     * `every` strategies.
+     */
+    startDate?: string
+    endDate?: string
+  }
+}
+
 export interface QueueRegistry {
   register(config: QueueConfig): void
   has(name: string): boolean
@@ -116,6 +181,24 @@ export interface QueueRegistry {
   removeJob(name: string, id: string): Promise<void>
   /** Promote a delayed job to the wait list. Throws `InvalidJobStateError` if not delayed. */
   promoteJob(name: string, id: string): Promise<void>
+  /**
+   * Enqueue a new job. Returns the `JobInfo` for the newly-added job so
+   * callers (notably the HTTP layer) can navigate straight to its detail.
+   */
+  addJob(name: string, jobName: string, data: unknown, opts?: AddJobOptions): Promise<JobInfo>
+  /**
+   * Snapshot of every job name muleta has ever observed across every
+   * registered queue. Backed by an in-memory cache; safe to call on every
+   * request. Returns the empty array until the index is populated (first
+   * `refreshJobNames` or first `addJob`).
+   */
+  getJobNames(): string[]
+  /**
+   * Pull recent jobs from Redis and feed any unseen names into the index.
+   * Bounded scan — at most ~200 jobs per registered queue. Called by the
+   * server on first index read and by the periodic discover loop.
+   */
+  refreshJobNames(): Promise<void>
 }
 
 /**

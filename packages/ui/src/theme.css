@@ -336,3 +336,45 @@
     }
   }
 }
+
+/* ============================================================
+   Form-field focus ring
+   ============================================================
+   daisyUI v5 renders focused .input / .textarea / .select with a hard
+   `outline: 2px solid base-content; outline-offset: 2px` (see
+   `daisyui/components/input.css`). The muleta design instead uses a
+   coloured border + soft halo (`box-shadow: 0 0 0 3px accent/14%`),
+   which is calmer for a dense dashboard form.
+
+   These rules are intentionally **unlayered** so they beat daisyUI's
+   `@layer utilities` declarations regardless of source order. We also
+   override `--input-color` (daisyUI's internal CSS var) so the border
+   colour follows the focus state without us having to re-declare it.
+   ============================================================ */
+.input:focus,
+.input:focus-within,
+.textarea:focus,
+.textarea:focus-within,
+.select:focus,
+.select:focus-within {
+  --input-color: var(--color-primary);
+  outline: none;
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 14%, transparent);
+}
+
+/* Invalid state — same halo shape, error tint. Picks up either the
+   daisyUI `*-error` modifier or a plain Tailwind `border-error`. */
+.input.input-error:focus,
+.input.input-error:focus-within,
+.input.border-error:focus,
+.input.border-error:focus-within,
+.textarea.textarea-error:focus,
+.textarea.textarea-error:focus-within,
+.textarea.border-error:focus,
+.textarea.border-error:focus-within,
+.select.select-error:focus,
+.select.select-error:focus-within {
+  --input-color: var(--color-error);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-error) 14%, transparent);
+}

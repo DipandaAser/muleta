@@ -271,4 +271,87 @@ describe("createHandler", () => {
       await reader.cancel().catch(() => {})
     })
   })
+
+  describe("POST /api/v1/queues/:name/jobs", () => {
+    it("enqueues a job and returns 201 + JobInfo", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/jobs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "send-welcome",
+          data: { to: "ada@example.com" },
+          opts: { attempts: 5, backoff: { type: "exponential", delay: 2000 } },
+        }),
+      })
+
+      expect(res.status).toBe(201)
+      const body = (await res.json()) as { id: string; name: string; attempts: number }
+      expect(body.name).toBe("send-welcome")
+      expect(body.attempts).toBe(5)
+
+      // Round-trip: the job is now visible to getJobs.
+      const result = await muleta.queues.getJobs("emails", { states: ["waiting"] })
+      expect(result.jobs.map((j) => j.id)).toContain(body.id)
+    })
+
+    it("returns 404 when the queue isn't registered", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/ghost/jobs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "x", data: {} }),
+      })
+      expect(res.status).toBe(404)
+    })
+
+    it("returns 400 on invalid backoff type", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/jobs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "x",
+          opts: { backoff: { type: "linear", delay: 1000 } },
+        }),
+      })
+      expect(res.status).toBe(400)
+    })
+
+    it("returns 400 when name is missing", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/jobs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ data: { foo: 1 } }),
+      })
+      expect(res.status).toBe(400)
+    })
+  })
+
+  describe("GET /api/v1/jobs/names", () => {
+    it("returns the global job-name index", async () => {
+      // Seed a couple of names by enqueueing through the registry.
+      await muleta.queues.addJob("emails", "send-welcome", {})
+      await muleta.queues.addJob("emails", "send-receipt", {})
+
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/jobs/names")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { names: string[] }
+      expect(body.names).toEqual(expect.arrayContaining(["send-welcome", "send-receipt"]))
+    })
+
+    it("lazily refreshes from Redis when the index is empty", async () => {
+      // Producer (outside muleta) drops a name in.
+      await producer.add("external-name", {})
+      // No addJob call → index hasn't recorded it yet.
+
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/jobs/names")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { names: string[] }
+      expect(body.names).toContain("external-name")
+    })
+  })
 })
