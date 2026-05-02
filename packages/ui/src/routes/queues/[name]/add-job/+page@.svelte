@@ -305,7 +305,7 @@
 										{@const active = delayUnit === u}
 										<button
 											type="button"
-											class="join-item px-2.5 py-1 text-[11px] font-mono-muleta transition-colors {active
+											class="join-item px-2.5 py-2 text-[12px] font-mono-muleta transition-colors {active
 												? 'bg-base-300 text-base-content'
 												: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
 											onclick={() => (delayUnit = u)}
@@ -324,7 +324,7 @@
 										{@const active = backoffType === t}
 										<button
 											type="button"
-											class="join-item px-2.5 py-1 text-[11px] font-mono-muleta transition-colors {active
+											class="join-item px-2.5 py-2 text-[12px] font-mono-muleta transition-colors {active
 												? 'bg-base-300 text-base-content'
 												: 'text-base-content/55 hover:bg-base-200 hover:text-base-content'}"
 											onclick={() => (backoffType = t)}
