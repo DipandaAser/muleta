@@ -176,6 +176,12 @@ importers:
       '@shikijs/monaco':
         specifier: ^4.0.2
         version: 4.0.2
+      cron-parser:
+        specifier: ^5.5.0
+        version: 5.5.0
+      cronstrue:
+        specifier: ^3.14.0
+        version: 3.14.0
       hono:
         specifier: ^4.12.14
         version: 4.12.14
@@ -1862,6 +1868,14 @@ packages:
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
+
+  cron-parser@5.5.0:
+    resolution: {integrity: sha512-oML4lKUXxizYswqmxuOCpgFS8BNUJpIu6k/2HVHyaL8Ynnf3wdf9tkns0yRdJLSIjkJ+b0DXHMZEHGpMwjnPww==}
+    engines: {node: '>=18'}
+
+  cronstrue@3.14.0:
+    resolution: {integrity: sha512-XnW4vuK/jPJjmTyDWiej1Zq36Od7ITwxaV2O1pzHZuyMVvdy7NAvyvIBzybt+idqSpfqYuoDG7uf/ocGtJVWxA==}
+    hasBin: true
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -5060,6 +5074,12 @@ snapshots:
   cron-parser@4.9.0:
     dependencies:
       luxon: 3.7.2
+
+  cron-parser@5.5.0:
+    dependencies:
+      luxon: 3.7.2
+
+  cronstrue@3.14.0: {}
 
   cross-spawn@7.0.6:
     dependencies:

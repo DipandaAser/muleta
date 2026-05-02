@@ -6,6 +6,8 @@
 	import CodeEditor from "$lib/components/code/CodeEditor.svelte"
 	import JobNamePicker from "$lib/jobs/JobNamePicker.svelte"
 	import { ArrowLeft, Check, Pause, Plus } from "@lucide/svelte"
+	import { CronExpressionParser } from "cron-parser"
+	import cronstrue from "cronstrue"
 
 	type DelayUnit = "ms" | "s" | "m"
 	type BackoffType = "fixed" | "exponential"
@@ -60,6 +62,43 @@
 		}
 	})
 	let jsonValid = $derived(parsedData.ok)
+
+	let cronExplanation = $derived.by<
+		{ ok: true; text: string } | { ok: false; error: string } | null
+	>(() => {
+		if (!repeat) return null
+		const pattern = repeatCron.trim()
+		if (!pattern) return null
+		try {
+			const text = cronstrue.toString(pattern, {
+				throwExceptionOnParseError: true,
+				use24HourTimeFormat: true,
+			})
+			return { ok: true, text }
+		} catch (e) {
+			return { ok: false, error: e instanceof Error ? e.message : "invalid cron" }
+		}
+	})
+
+	let cronNextRun = $derived.by<Date | null>(() => {
+		if (!repeat) return null
+		const pattern = repeatCron.trim()
+		if (!pattern) return null
+		try {
+			const interval = CronExpressionParser.parse(pattern)
+			return interval.next().toDate()
+		} catch {
+			return null
+		}
+	})
+
+	function formatNextRun(d: Date): string {
+		// `YYYY-MM-DD HH:mm:ss` — same shape crontab.guru uses, locale-free
+		// so timezone differences don't make the form's output visually
+		// inconsistent across users on the same team.
+		const pad = (n: number) => String(n).padStart(2, "0")
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+	}
 
 	/**
 	 * Translate the form's three knobs (count, age, age-unit) into the
@@ -476,13 +515,48 @@
 						<span>Repeat on cron</span>
 					</label>
 					{#if repeat}
-						<div class="ml-9 flex flex-col gap-1">
+						<div class="ml-9 flex flex-col gap-1.5">
 							<input
 								type="text"
 								bind:value={repeatCron}
+								placeholder="0 */15 * * * *"
+								aria-label="Cron pattern (5- or 6-field)"
+								aria-describedby="cron-explanation"
 								class="input input-sm font-mono-muleta max-w-xs"
+								class:border-error={cronExplanation?.ok === false}
 								spellcheck="false"
 							/>
+							<!--
+								Mirrors crontab.guru's at-a-glance plain-English summary.
+								We render the message regardless of validity — green/muted
+								when cronstrue parses the pattern, red when it can't —
+								so the user never has to click "validate" to know whether
+								they got the syntax right.
+							-->
+							{#if cronExplanation}
+								<div
+									id="cron-explanation"
+									class="text-[12px] flex items-start gap-1.5 max-w-md"
+									class:text-base-content={cronExplanation.ok}
+									class:text-error={!cronExplanation.ok}
+								>
+									{#if cronExplanation.ok}
+										<span class="text-base-content/40">→</span>
+										<span class="italic">"{cronExplanation.text}"</span>
+									{:else}
+										<span>⚠</span>
+										<span class="font-mono-muleta text-[11px]">{cronExplanation.error}</span>
+									{/if}
+								</div>
+							{/if}
+							{#if cronNextRun}
+								<div class="text-[11px] flex items-center gap-1.5 text-base-content/55">
+									<span>next at</span>
+									<span class="font-mono-muleta tnum text-base-content/80">
+										{formatNextRun(cronNextRun)}
+									</span>
+								</div>
+							{/if}
 							{#if jobId.trim()}
 								<span class="text-[11px] text-base-content/50">
 									BullMQ ignores Job ID for repeating jobs — it derives a deterministic id from the
