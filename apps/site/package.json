@@ -12,15 +12,15 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.6.0",
-    "@astrojs/svelte": "^7.0.0",
+    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/svelte": "^8.1.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@lucide/astro": "^1.8.0",
     "@lucide/svelte": "^1.3.0",
     "@muleta-dev/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
-    "astro": "^5.16.0",
+    "astro": "^6.1.6",
     "daisyui": "^5.0.0",
     "shiki": "^4.0.0",
     "svelte": "^5.55.2",
