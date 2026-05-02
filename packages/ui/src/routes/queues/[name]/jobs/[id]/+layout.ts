@@ -1,4 +1,5 @@
 import { api, type JobDetail } from "$lib/api/client"
+import type { CrumbFn } from "$lib/shell/crumbs"
 import type { LayoutLoad } from "./$types"
 
 export const load: LayoutLoad = async ({ params }) => {
@@ -6,11 +7,11 @@ export const load: LayoutLoad = async ({ params }) => {
   let error: string | null = null
   let notFound = false
   try {
-    const res = await api.api.v1.queues[":name"].jobs[":id"].$get({
+    const jobRes = await api.api.v1.queues[":name"].jobs[":id"].$get({
       param: { name: params.name, id: params.id },
     })
-    if (res.ok) {
-      job = await res.json()
+    if (jobRes.ok) {
+      job = await jobRes.json()
     } else {
       // Only 404 is declared as a non-200 response for this route; anything
       // else would be a runtime surprise (e.g. network failure, 5xx) which
@@ -22,3 +23,7 @@ export const load: LayoutLoad = async ({ params }) => {
   }
   return { name: params.name, id: params.id, job, error, notFound }
 }
+
+export const _crumb: CrumbFn = ({ params }) => ({
+  label: `#${params.id}`,
+})
