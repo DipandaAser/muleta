@@ -69,6 +69,43 @@ describe("QueueRegistry", () => {
     expect(info?.isPaused).toBe(true)
   })
 
+  describe("pauseQueue / resumeQueue", () => {
+    it("pauses the queue so isPaused flips to true", async () => {
+      await muleta.queues.pauseQueue("emails")
+      const info = await muleta.queues.get("emails")
+      expect(info.isPaused).toBe(true)
+    })
+
+    it("resumes a paused queue", async () => {
+      await producer.pause()
+      const before = await muleta.queues.get("emails")
+      expect(before.isPaused).toBe(true)
+
+      await muleta.queues.resumeQueue("emails")
+
+      const after = await muleta.queues.get("emails")
+      expect(after.isPaused).toBe(false)
+    })
+
+    it("pause is idempotent on an already-paused queue", async () => {
+      await muleta.queues.pauseQueue("emails")
+      await expect(muleta.queues.pauseQueue("emails")).resolves.toBeUndefined()
+      const info = await muleta.queues.get("emails")
+      expect(info.isPaused).toBe(true)
+    })
+
+    it("resume is idempotent on a running queue", async () => {
+      await expect(muleta.queues.resumeQueue("emails")).resolves.toBeUndefined()
+      const info = await muleta.queues.get("emails")
+      expect(info.isPaused).toBe(false)
+    })
+
+    it("throws for unregistered queues", async () => {
+      await expect(muleta.queues.pauseQueue("nope")).rejects.toThrow(/not registered/)
+      await expect(muleta.queues.resumeQueue("nope")).rejects.toThrow(/not registered/)
+    })
+  })
+
   it("falls back to name when displayName is not set", async () => {
     await muleta.close()
     muleta = await createMuleta({

@@ -38,6 +38,17 @@ export interface QueueRegistry {
   has(name: string): boolean
   list(): Promise<QueueInfo[]>
   get(name: string): Promise<QueueInfo>
+  /**
+   * Pause the queue: workers stop picking up new jobs. Idempotent —
+   * calling on an already-paused queue is a no-op. Throws if the queue
+   * isn't registered.
+   */
+  pauseQueue(name: string): Promise<void>
+  /**
+   * Resume a paused queue. Idempotent — calling on a running queue is
+   * a no-op. Throws if the queue isn't registered.
+   */
+  resumeQueue(name: string): Promise<void>
   getJobs(name: string, opts: GetJobsOptions): Promise<GetJobsResult>
   /** Returns `null` if the job no longer exists (e.g. removed, expired). */
   getJob(name: string, id: string): Promise<JobDetail | null>
