@@ -41,10 +41,13 @@ async function buildInfo(state: RegistryState, name: string): Promise<QueueInfo>
   }
 }
 
-/** register/has/list/get + the registry-wide `close()` lifecycle pair. */
-export function createLifecycleOps(
-  state: RegistryState,
-): Pick<QueueRegistry, "register" | "has" | "list" | "get"> & { close(): Promise<void> } {
+/** register/has/list/get + pause/resume + the registry-wide `close()` lifecycle pair. */
+export function createLifecycleOps(state: RegistryState): Pick<
+  QueueRegistry,
+  "register" | "has" | "list" | "get" | "pauseQueue" | "resumeQueue"
+> & {
+  close(): Promise<void>
+} {
   return {
     register(config) {
       const existing = state.sources.get(config.name)
@@ -68,6 +71,16 @@ export function createLifecycleOps(
 
     get(name) {
       return buildInfo(state, name)
+    },
+
+    async pauseQueue(name) {
+      const { queue } = state.getOrCreate(name)
+      await queue.pause()
+    },
+
+    async resumeQueue(name) {
+      const { queue } = state.getOrCreate(name)
+      await queue.resume()
     },
 
     async close() {

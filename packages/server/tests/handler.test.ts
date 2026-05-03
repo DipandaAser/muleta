@@ -107,6 +107,32 @@ describe("createHandler", () => {
     expect(res.status).toBe(404)
   })
 
+  describe("POST /api/v1/queues/:name/pause and /resume", () => {
+    it("pause flips isPaused to true; resume flips it back", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const pauseRes = await handler.request("/api/v1/queues/emails/pause", { method: "POST" })
+      expect(pauseRes.status).toBe(204)
+      const paused = await muleta.queues.get("emails")
+      expect(paused.isPaused).toBe(true)
+
+      const resumeRes = await handler.request("/api/v1/queues/emails/resume", { method: "POST" })
+      expect(resumeRes.status).toBe(204)
+      const resumed = await muleta.queues.get("emails")
+      expect(resumed.isPaused).toBe(false)
+    })
+
+    it("returns 404 for unregistered queues on both verbs", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const pauseRes = await handler.request("/api/v1/queues/ghost/pause", { method: "POST" })
+      expect(pauseRes.status).toBe(404)
+
+      const resumeRes = await handler.request("/api/v1/queues/ghost/resume", { method: "POST" })
+      expect(resumeRes.status).toBe(404)
+    })
+  })
+
   it("GET /api/v1/queues/:name/jobs returns a page of jobs", async () => {
     await producer.add("send", { to: "a@b" })
     await producer.add("send", { to: "b@b" })

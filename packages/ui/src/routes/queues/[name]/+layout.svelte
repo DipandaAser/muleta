@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { invalidateAll } from "$app/navigation"
 	import { page } from "$app/state"
+	import { api } from "$lib/api/client"
 	import {
 		MoreHorizontal,
 		MoreHorizontalIcon,
 		Pause,
+		Play,
 		Plus,
 		RefreshCw,
 		Rows4,
@@ -23,6 +25,31 @@
 	let queue = $derived(data.queue)
 	let name = $derived(data.name)
 	let queueError = $derived(data.error)
+
+	// `pendingAction` doubles as a busy flag and a tag for which verb is
+	// in flight, so the button can label itself "Pausing…" / "Resuming…"
+	// before the loader returns and flips `queue.isPaused`.
+	let pendingAction = $state<"pause" | "resume" | null>(null)
+	let pauseError = $state<string | null>(null)
+
+	async function togglePause() {
+		if (!queue || pendingAction !== null) return
+		const action = queue.isPaused ? "resume" : "pause"
+		pendingAction = action
+		pauseError = null
+		try {
+			const res =
+				action === "pause"
+					? await api.api.v1.queues[":name"].pause.$post({ param: { name } })
+					: await api.api.v1.queues[":name"].resume.$post({ param: { name } })
+			if (!res.ok) throw new Error(`HTTP ${res.status}`)
+			await invalidateAll()
+		} catch (e) {
+			pauseError = e instanceof Error ? e.message : `failed to ${action} queue`
+		} finally {
+			pendingAction = null
+		}
+	}
 
 	const TABS: Array<{
 		id: string
@@ -88,6 +115,31 @@
 		</div>
 	{/if}
 
+	{#if pauseError}
+		<div
+			class="flex items-center gap-2.5 px-6 py-2 text-[12px] border-b"
+			style:background="oklch(0.64 0.2 18 / 0.12)"
+			style:border-color="oklch(0.64 0.2 18 / 0.35)"
+			style:color="oklch(72% 0.17 20)"
+		>
+			<TriangleAlert size={13} />
+			<span>
+				<b class="text-base-content">Couldn't change queue state.</b>
+				<span class="font-mono-muleta ml-1 text-base-content/60">{pauseError}</span>
+			</span>
+			<button
+				type="button"
+				class="ml-auto px-2 py-0.5 rounded text-[11px] border cursor-pointer hover:bg-base-300/20"
+				style:border-color="oklch(0.64 0.2 18 / 0.35)"
+				style:color="oklch(72% 0.17 20)"
+				onclick={() => (pauseError = null)}
+				aria-label="Dismiss"
+			>
+				Dismiss
+			</button>
+		</div>
+	{/if}
+
 	<div class="px-10 pt-8 min-w-full">
 		<!-- header -->
 		<div class="flex items-start gap-4">
@@ -115,8 +167,21 @@
 				<a href="/queues/{name}/add-job" class="btn btn-sm btn-ghost">
 					<Plus size={13} /> Add job
 				</a>
-				<button type="button" class="btn btn-sm btn-ghost" disabled>
-					<Pause size={13} /> Pause
+				<button
+					type="button"
+					class="btn btn-sm btn-ghost"
+					onclick={togglePause}
+					disabled={pendingAction !== null || !queue}
+					title={queue?.isPaused ? "Resume queue" : "Pause queue"}
+				>
+					{#if pendingAction !== null}
+						<RefreshCw size={13} class="animate-spin" />
+						{pendingAction === "pause" ? "Pausing…" : "Resuming…"}
+					{:else if queue?.isPaused}
+						<Play size={13} /> Resume
+					{:else}
+						<Pause size={13} /> Pause
+					{/if}
 				</button>
 				<button
 					type="button"
