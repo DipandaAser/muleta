@@ -4,7 +4,7 @@ import { GenericContainer, type StartedTestContainer } from "testcontainers"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import type { Muleta } from "../src/index.js"
 import { createMuleta, InvalidJobStateError, JobNotFoundError } from "../src/index.js"
-import { DEFAULT_BULLMQ_PREFIX, type InternalQueueRegistry } from "../src/queue/registry.js"
+import { DEFAULT_BULLMQ_PREFIX, type InternalQueueRegistry } from "../src/queue/index.js"
 
 describe("QueueRegistry", () => {
   let container: StartedTestContainer

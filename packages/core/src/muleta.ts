@@ -1,6 +1,6 @@
-import { createHealthProbe } from "./health.js"
-import { createQueueRegistry, DEFAULT_BULLMQ_PREFIX } from "./queue/registry.js"
-import { createRedis } from "./redis.js"
+import { createHealthProbe } from "./health/index.js"
+import { createQueueRegistry, DEFAULT_BULLMQ_PREFIX } from "./queue/index.js"
+import { createRedis } from "./redis/index.js"
 import type { Muleta, MuletaOptions } from "./types.js"
 
 const DISCOVERY_INTERVAL_MS = 15_000
