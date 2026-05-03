@@ -10,7 +10,6 @@
 		Copy,
 		Ellipsis,
 		GitBranch,
-		Pause,
 		Play,
 		RefreshCw,
 		RotateCcw,
@@ -18,7 +17,6 @@
 		Server,
 		Trash2,
 		TriangleAlert,
-		User,
 		Zap,
 	} from "@lucide/svelte"
 	import type { Snippet } from "svelte"
@@ -148,8 +146,19 @@
 					<span class="text-[13px] text-base-content/40 font-normal">#{job.id}</span>
 				</h1>
 				<div class="flex ml-auto items-center gap-1">
-					<button type="button" class="btn btn-sm btn-ghost" disabled>
-						<Pause size={13} /> Discard
+					<button
+						type="button"
+						class="btn btn-sm btn-ghost text-error"
+						onclick={() => (confirmRemoveOpen = true)}
+						disabled={actionBusy !== null}
+						title="Remove this job from the queue"
+					>
+						{#if actionBusy === "remove"}
+							<span class="loading loading-spinner loading-xs"></span>
+						{:else}
+							<Trash2 size={13} />
+						{/if}
+						Remove
 					</button>
 					<button type="button" class="btn btn-sm btn-ghost" disabled>
 						<Copy size={13} /> Duplicate
