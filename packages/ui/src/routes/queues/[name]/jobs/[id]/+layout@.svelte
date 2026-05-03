@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from "$app/navigation"
 	import { page } from "$app/state"
-	import { type JobDetail, api } from "$lib/api/client"
+	import { type AddJobOptions, type JobDetail, api } from "$lib/api/client"
 	import LifecycleTimeline from "$lib/components/LifecycleTimeline.svelte"
 	import StateBadge from "$lib/components/StateBadge.svelte"
 	import { age, byteSize, duration, summarizeBackoff, summarizeRemoveOn } from "$lib/jobs/format"
@@ -13,6 +13,7 @@
 		Download,
 		Ellipsis,
 		GitBranch,
+		Pencil,
 		Play,
 		RefreshCw,
 		RotateCcw,
@@ -62,12 +63,12 @@
 		return page.url.pathname.startsWith(`/queues/${name}/jobs/${id}/${tab}`)
 	}
 
-	let actionBusy = $state<"retry" | "remove" | "promote" | null>(null)
+	let actionBusy = $state<"retry" | "remove" | "promote" | "duplicate" | null>(null)
 	let actionError = $state<string | null>(null)
 	let confirmRemoveOpen = $state(false)
 
 	async function runAction(
-		kind: "retry" | "remove" | "promote",
+		kind: "retry" | "remove" | "promote" | "duplicate",
 		fn: () => Promise<Response>,
 	): Promise<Response | null> {
 		actionBusy = kind
@@ -116,19 +117,91 @@
 		if (ok) await goto(`/queues/${name}/jobs`)
 	}
 
+	/**
+	 * Build the AddJob payload for a clone. Behavioral opts (priority,
+	 * attempts, backoff, removeOn*) carry over so the new job runs the
+	 * same retry/cleanup policy. We deliberately drop:
+	 *
+	 *   - `jobId`   — would collide with the source job's deterministic id
+	 *   - `delay`   — was relative to the original add time; copying makes
+	 *                 the duplicate fire in the past or far future
+	 *   - `repeat`  — duplicating a scheduler creates a parallel one,
+	 *                 almost never what the operator wants
+	 */
+	function buildDuplicateOpts(src: Record<string, unknown>): AddJobOptions {
+		const opts: AddJobOptions = {}
+		if (typeof src.priority === "number") opts.priority = src.priority
+		if (typeof src.attempts === "number") opts.attempts = src.attempts
+		if (
+			src.backoff &&
+			typeof src.backoff === "object" &&
+			"type" in src.backoff &&
+			"delay" in src.backoff
+		) {
+			const b = src.backoff as { type: unknown; delay: unknown }
+			if ((b.type === "fixed" || b.type === "exponential") && typeof b.delay === "number") {
+				opts.backoff = { type: b.type, delay: b.delay }
+			}
+		}
+		if (src.removeOnComplete !== undefined) {
+			opts.removeOnComplete = src.removeOnComplete as AddJobOptions["removeOnComplete"]
+		}
+		if (src.removeOnFail !== undefined) {
+			opts.removeOnFail = src.removeOnFail as AddJobOptions["removeOnFail"]
+		}
+		return opts
+	}
+
+	async function onDuplicate() {
+		if (!job) return
+		actionBusy = "duplicate"
+		actionError = null
+		try {
+			const opts = buildDuplicateOpts(job.opts)
+			const res = await api.api.v1.queues[":name"].jobs.$post({
+				param: { name },
+				json: {
+					name: job.name,
+					data: job.data,
+					...(Object.keys(opts).length > 0 ? { opts } : {}),
+				},
+			})
+			if (!res.ok) {
+				let message = `HTTP ${res.status}`
+				try {
+					const body = (await res.json()) as { error?: string }
+					if (body?.error) message = body.error
+				} catch {
+					// non-JSON error body; keep the HTTP fallback
+				}
+				actionError = message
+				return
+			}
+			const body = await res.json()
+			await goto(`/queues/${name}/jobs/${body.id}/data`)
+		} catch (e) {
+			actionError = e instanceof Error ? e.message : "duplicate failed"
+		} finally {
+			actionBusy = null
+		}
+	}
+
 	let exportMenu = $state<HTMLDetailsElement | null>(null)
+	let duplicateMenu = $state<HTMLDetailsElement | null>(null)
 	// Tri-state UI feedback for the clipboard action — flips to "copied" for
 	// a beat after success so the operator knows the click registered before
 	// they paste somewhere else.
 	let copyState = $state<"idle" | "copied" | "error">("idle")
 
-	// Native <details> doesn't close when the user clicks outside — only on
-	// summary toggle. This effect close the export menu when clicking elsewhere on the doc.
+	// Native <details> doesn't close on outside click — only on summary
+	// toggle. This single doc-level listener closes any open dropdown
+	// when the click lands outside it, so adding a third menu later is
+	// just one more entry in the array.
 	$effect(() => {
 		function onDocClick(e: MouseEvent) {
-			if (!exportMenu?.open) return
-			if (e.target instanceof Node && !exportMenu.contains(e.target)) {
-				exportMenu.removeAttribute("open")
+			if (!(e.target instanceof Node)) return
+			for (const m of [exportMenu, duplicateMenu]) {
+				if (m?.open && !m.contains(e.target)) m.removeAttribute("open")
 			}
 		}
 		document.addEventListener("mousedown", onDocClick)
@@ -219,9 +292,56 @@
 						{/if}
 						Remove
 					</button>
-					<button type="button" class="btn btn-sm btn-ghost" disabled>
-						<Copy size={13} /> Duplicate
-					</button>
+					<div class="join">
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost join-item"
+							onclick={onDuplicate}
+							disabled={!job || actionBusy !== null}
+							title="Enqueue a copy with the same name, data, and policy"
+						>
+							{#if actionBusy === "duplicate"}
+								<span class="loading loading-spinner loading-xs"></span>
+							{:else}
+								<Copy size={13} />
+							{/if}
+							Duplicate
+						</button>
+						<details bind:this={duplicateMenu} class="dropdown dropdown-end">
+							<summary
+								class="btn btn-sm btn-ghost join-item btn-square"
+								aria-label="Duplicate options"
+							>
+								<ChevronRight size={12} class="rotate-90" />
+							</summary>
+							<ul
+								class="menu dropdown-content z-10 mt-1 w-56 rounded border border-base-300 bg-base-100 p-1 shadow-md text-[12px]"
+							>
+								<li>
+									<button
+										type="button"
+										class="gap-2"
+										onclick={() => {
+											duplicateMenu?.removeAttribute("open")
+											onDuplicate()
+										}}
+										disabled={!job}
+									>
+										<Copy size={12} /> Duplicate
+									</button>
+								</li>
+								<li>
+									<a
+										href="/queues/{name}/add-job?from={id}"
+										onclick={() => duplicateMenu?.removeAttribute("open")}
+										class="gap-2"
+									>
+										<Pencil size={12} /> Duplicate with overrides…
+									</a>
+								</li>
+							</ul>
+						</details>
+					</div>
 					<details bind:this={exportMenu} class="dropdown dropdown-end">
 						<summary class="btn btn-sm btn-ghost join-item" aria-label="Export options">
 							<Download size={12} /> Export

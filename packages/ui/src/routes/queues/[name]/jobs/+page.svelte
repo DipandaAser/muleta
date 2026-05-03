@@ -106,7 +106,7 @@
 		<Search size={12} />
 		<input
 			type="text"
-			placeholder="Search data… data.to:@parsel.co"
+			placeholder="Search data… data.to:@muleta.dev"
 			class="flex-1 bg-transparent border-0 outline-0 text-[11.5px] text-base-content"
 			disabled
 		/>
