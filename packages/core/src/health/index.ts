@@ -1,5 +1,6 @@
 import type { Redis } from "ioredis"
-import type { HealthStatus, RedisConnectionStatus, RedisHealth } from "./types.js"
+import type { RedisConnectionStatus } from "../redis/types.js"
+import type { HealthStatus, RedisHealth } from "./types.js"
 
 /**
  * Parses the subset of `INFO` we care about. Redis returns a newline-delimited

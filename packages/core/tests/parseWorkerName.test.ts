@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseWorkerName } from "../src/queue/registry.js"
+import { parseWorkerName } from "../src/queue/index.js"
 
 /**
  * Pure-function unit tests for the helper that strips BullMQ's

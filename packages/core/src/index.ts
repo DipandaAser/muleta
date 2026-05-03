@@ -1,23 +1,19 @@
+export type { HealthStatus, RedisHealth } from "./health/types.js"
 export { createMuleta } from "./muleta.js"
+export { InvalidJobStateError, JobNotFoundError } from "./queue/jobs/errors.js"
 export type {
   AddJobOptions,
   GetJobsOptions,
   GetJobsResult,
-  HealthStatus,
   JobDetail,
   JobInfo,
   JobProgress,
   JobState,
   KeepJobs,
-  Muleta,
-  MuletaOptions,
-  QueueConfig,
-  QueueCounts,
-  QueueInfo,
-  QueueRegistry,
-  RedisConnectionOptions,
-  RedisConnectionStatus,
-  RedisHealth,
-  WorkerInfo,
-} from "./types.js"
-export { InvalidJobStateError, JobNotFoundError, REDIS_CONNECTION_STATUSES } from "./types.js"
+} from "./queue/jobs/types.js"
+export type { JobSchedulerInfo } from "./queue/schedulers/types.js"
+export type { QueueConfig, QueueCounts, QueueInfo, QueueRegistry } from "./queue/types.js"
+export type { WorkerInfo } from "./queue/workers/types.js"
+export type { RedisConnectionOptions, RedisConnectionStatus } from "./redis/types.js"
+export { REDIS_CONNECTION_STATUSES } from "./redis/types.js"
+export type { Muleta, MuletaOptions } from "./types.js"
