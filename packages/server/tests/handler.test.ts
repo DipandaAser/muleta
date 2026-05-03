@@ -437,4 +437,126 @@ describe("createHandler", () => {
       }
     })
   })
+
+  describe("GET /api/v1/queues/:name/schedulers", () => {
+    it("returns an empty list when no schedulers are registered on the queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/schedulers")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { schedulers: unknown[] }
+      expect(body.schedulers).toEqual([])
+    })
+
+    it("surfaces a cron-pattern scheduler with template + tz", async () => {
+      await producer.upsertJobScheduler(
+        "daily-digest",
+        { pattern: "0 9 * * *", tz: "UTC" },
+        { name: "send-email", data: { kind: "digest" } },
+      )
+
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/schedulers")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as {
+        schedulers: Array<{
+          id: string
+          jobName: string
+          pattern?: string
+          every?: number
+          tz?: string
+          next: number | null
+          template?: { data?: unknown }
+        }>
+      }
+
+      expect(body.schedulers).toHaveLength(1)
+      const [s] = body.schedulers
+      expect(s).toMatchObject({
+        id: "daily-digest",
+        jobName: "send-email",
+        pattern: "0 9 * * *",
+        tz: "UTC",
+      })
+      expect(s?.every).toBeUndefined()
+      expect(typeof s?.next).toBe("number")
+      expect(s?.template?.data).toEqual({ kind: "digest" })
+    })
+
+    it("returns 404 for an unregistered queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/nope/schedulers")
+      expect(res.status).toBe(404)
+    })
+
+    it("DELETE /:id removes the scheduler and returns 204", async () => {
+      await producer.upsertJobScheduler("doomed", { every: 30_000 }, { name: "ping" })
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+      const res = await handler.request("/api/v1/queues/emails/schedulers/doomed", {
+        method: "DELETE",
+      })
+      expect(res.status).toBe(204)
+
+      const after = await muleta.queues.getJobSchedulers("emails")
+      expect(after.find((s) => s.id === "doomed")).toBeUndefined()
+    })
+
+    it("DELETE /:id returns 404 when scheduler doesn't exist", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/schedulers/never", {
+        method: "DELETE",
+      })
+      expect(res.status).toBe(404)
+    })
+
+    it("DELETE /:id returns 404 for an unregistered queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/nope/schedulers/x", {
+        method: "DELETE",
+      })
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe("GET /api/v1/schedulers", () => {
+    it("returns an empty list when no schedulers exist anywhere", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/schedulers")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { schedulers: unknown[] }
+      expect(body.schedulers).toEqual([])
+    })
+
+    it("flattens schedulers across queues with their queue tag", async () => {
+      muleta.queues.register({ name: "reports" })
+      const reportsProducer = new Queue("reports", { connection: producerConnection })
+      try {
+        await producer.upsertJobScheduler(
+          "monthly",
+          { pattern: "0 0 1 * *", tz: "UTC" },
+          { name: "rollup" },
+        )
+        await reportsProducer.upsertJobScheduler("frequent", { every: 30_000 }, { name: "ping" })
+
+        const handler = createHandler({ endpoints: createEndpoints(muleta) })
+        const res = await handler.request("/api/v1/schedulers")
+        expect(res.status).toBe(200)
+        const body = (await res.json()) as {
+          schedulers: Array<{ id: string; queue: string; next: number | null }>
+        }
+
+        const ids = body.schedulers.map((s) => s.id)
+        expect(ids).toEqual(expect.arrayContaining(["frequent", "monthly"]))
+        const frequent = body.schedulers.find((s) => s.id === "frequent")
+        const monthly = body.schedulers.find((s) => s.id === "monthly")
+        expect(frequent?.queue).toBe("reports")
+        expect(monthly?.queue).toBe("emails")
+        // Soonest-first global ordering: every-30s precedes monthly cron.
+        expect(ids.indexOf("frequent")).toBeLessThan(ids.indexOf("monthly"))
+      } finally {
+        await reportsProducer.obliterate({ force: true }).catch(() => {})
+        await reportsProducer.close()
+      }
+    })
+  })
 })

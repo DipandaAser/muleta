@@ -3,6 +3,7 @@ import type { Muleta } from "@muleta-dev/core"
 import { createHealthApp } from "./health/index.js"
 import { createJobsApp } from "./jobs/index.js"
 import { createQueuesApp } from "./queues/index.js"
+import { createSchedulersApp } from "./schedulers/index.js"
 import { createWorkersApp } from "./workers/index.js"
 
 export function createEndpoints(muleta: Muleta) {
@@ -10,5 +11,6 @@ export function createEndpoints(muleta: Muleta) {
     .route("/queues", createQueuesApp(muleta))
     .route("/jobs", createJobsApp(muleta))
     .route("/workers", createWorkersApp(muleta))
+    .route("/schedulers", createSchedulersApp(muleta))
     .route("/health", createHealthApp(muleta))
 }

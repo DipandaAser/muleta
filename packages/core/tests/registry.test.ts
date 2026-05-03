@@ -435,6 +435,125 @@ describe("QueueRegistry", () => {
       }
     })
   })
+
+  describe("getJobSchedulers", () => {
+    it("returns an empty list when no schedulers are registered", async () => {
+      const schedulers = await muleta.queues.getJobSchedulers("emails")
+      expect(schedulers).toEqual([])
+    })
+
+    it("surfaces a cron-pattern scheduler with its queue tag", async () => {
+      await producer.upsertJobScheduler(
+        "daily-digest",
+        { pattern: "0 9 * * *", tz: "UTC" },
+        { name: "send-email", data: { kind: "digest" } },
+      )
+
+      const schedulers = await muleta.queues.getJobSchedulers("emails")
+
+      expect(schedulers).toHaveLength(1)
+      const [s] = schedulers
+      expect(s).toMatchObject({
+        id: "daily-digest",
+        queue: "emails",
+        jobName: "send-email",
+        pattern: "0 9 * * *",
+        tz: "UTC",
+      })
+      expect(s?.every).toBeUndefined()
+      expect(typeof s?.next).toBe("number")
+    })
+
+    it("surfaces an `every`-interval scheduler", async () => {
+      await producer.upsertJobScheduler("healthcheck", { every: 30_000 }, { name: "ping" })
+
+      const schedulers = await muleta.queues.getJobSchedulers("emails")
+      const sched = schedulers.find((s) => s.id === "healthcheck")
+
+      expect(sched).toBeDefined()
+      expect(sched?.every).toBe(30_000)
+      expect(sched?.pattern).toBeUndefined()
+      expect(sched?.jobName).toBe("ping")
+    })
+
+    it("orders results soonest-first by `next` fire time", async () => {
+      await producer.upsertJobScheduler(
+        "monthly",
+        { pattern: "0 0 1 * *", tz: "UTC" },
+        { name: "rollup" },
+      )
+      await producer.upsertJobScheduler("frequent", { every: 30_000 }, { name: "ping" })
+
+      const schedulers = await muleta.queues.getJobSchedulers("emails")
+      const ids = schedulers.map((s) => s.id)
+
+      // `frequent` (30s) should always fire before the next `monthly`
+      // (up to ~31 days away), regardless of when the test runs.
+      expect(ids.indexOf("frequent")).toBeLessThan(ids.indexOf("monthly"))
+    })
+
+    it("throws for unregistered queues", async () => {
+      await expect(muleta.queues.getJobSchedulers("nope")).rejects.toThrow(/not registered/)
+    })
+  })
+
+  describe("removeJobScheduler", () => {
+    it("removes a scheduler so subsequent listings drop it", async () => {
+      await producer.upsertJobScheduler("doomed", { every: 30_000 }, { name: "ping" })
+      const before = await muleta.queues.getJobSchedulers("emails")
+      expect(before.find((s) => s.id === "doomed")).toBeDefined()
+
+      const removed = await muleta.queues.removeJobScheduler("emails", "doomed")
+      expect(removed).toBe(true)
+
+      const after = await muleta.queues.getJobSchedulers("emails")
+      expect(after.find((s) => s.id === "doomed")).toBeUndefined()
+    })
+
+    it("returns false when the scheduler doesn't exist", async () => {
+      const result = await muleta.queues.removeJobScheduler("emails", "never-existed")
+      expect(result).toBe(false)
+    })
+
+    it("throws for unregistered queues", async () => {
+      await expect(muleta.queues.removeJobScheduler("nope", "x")).rejects.toThrow(/not registered/)
+    })
+  })
+
+  describe("getAllJobSchedulers", () => {
+    it("returns an empty list when no schedulers exist anywhere", async () => {
+      const all = await muleta.queues.getAllJobSchedulers()
+      expect(all).toEqual([])
+    })
+
+    it("flattens schedulers across queues, soonest-first by next fire time", async () => {
+      muleta.queues.register({ name: "reports" })
+      const reportsProducer = new Queue("reports", { connection: producerConnection })
+      try {
+        await producer.upsertJobScheduler(
+          "monthly",
+          { pattern: "0 0 1 * *", tz: "UTC" },
+          { name: "rollup" },
+        )
+        await reportsProducer.upsertJobScheduler("frequent", { every: 30_000 }, { name: "ping" })
+
+        const all = await muleta.queues.getAllJobSchedulers()
+        const ids = all.map((s) => s.id)
+
+        // Both surface, tagged with the right queue. `frequent` (every 30s)
+        // should always sort before the next monthly cron tick.
+        expect(ids).toEqual(expect.arrayContaining(["frequent", "monthly"]))
+        const frequent = all.find((s) => s.id === "frequent")
+        const monthly = all.find((s) => s.id === "monthly")
+        expect(frequent?.queue).toBe("reports")
+        expect(monthly?.queue).toBe("emails")
+        expect(ids.indexOf("frequent")).toBeLessThan(ids.indexOf("monthly"))
+      } finally {
+        await reportsProducer.obliterate({ force: true }).catch(() => {})
+        await reportsProducer.close()
+      }
+    })
+  })
 })
 
 describe("queue autodiscovery", () => {

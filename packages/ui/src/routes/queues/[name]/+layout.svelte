@@ -41,7 +41,7 @@
 				return waiting + active + failed + delayed + prioritized
 			},
 		},
-		{ id: "schedulers", label: "Schedulers", disabled: true },
+		{ id: "schedulers", label: "Schedulers", disabled: false },
 		{ id: "workers", label: "Workers", disabled: false },
 		{ id: "flows", label: "Flows", disabled: true },
 		{ id: "metrics", label: "Metrics", disabled: true },
