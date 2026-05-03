@@ -6,8 +6,11 @@
 	import StateBadge from "$lib/components/StateBadge.svelte"
 	import { age, byteSize, duration, summarizeBackoff, summarizeRemoveOn } from "$lib/jobs/format"
 	import {
+		Check,
 		ChevronRight,
+		Clipboard,
 		Copy,
+		Download,
 		Ellipsis,
 		GitBranch,
 		Play,
@@ -112,6 +115,62 @@
 		)
 		if (ok) await goto(`/queues/${name}/jobs`)
 	}
+
+	let exportMenu = $state<HTMLDetailsElement | null>(null)
+	// Tri-state UI feedback for the clipboard action — flips to "copied" for
+	// a beat after success so the operator knows the click registered before
+	// they paste somewhere else.
+	let copyState = $state<"idle" | "copied" | "error">("idle")
+
+	// Native <details> doesn't close when the user clicks outside — only on
+	// summary toggle. This effect close the export menu when clicking elsewhere on the doc.
+	$effect(() => {
+		function onDocClick(e: MouseEvent) {
+			if (!exportMenu?.open) return
+			if (e.target instanceof Node && !exportMenu.contains(e.target)) {
+				exportMenu.removeAttribute("open")
+			}
+		}
+		document.addEventListener("mousedown", onDocClick)
+		return () => document.removeEventListener("mousedown", onDocClick)
+	})
+
+	function jobAsJson(): string {
+		// Two-space indent matches the design's monospace blocks elsewhere
+		// and is the conventional shape for sharing a job dump in tickets.
+		return JSON.stringify(job, null, 2)
+	}
+
+	function downloadJson() {
+		if (!job) return
+		const blob = new Blob([jobAsJson()], { type: "application/json" })
+		const url = URL.createObjectURL(blob)
+		const anchor = document.createElement("a")
+		anchor.href = url
+		anchor.download = `${name}-${job.id}.json`
+		document.body.appendChild(anchor)
+		anchor.click()
+		document.body.removeChild(anchor)
+		URL.revokeObjectURL(url)
+		exportMenu?.removeAttribute("open")
+	}
+
+	async function copyJsonToClipboard() {
+		if (!job) return
+		try {
+			await navigator.clipboard.writeText(jobAsJson())
+			copyState = "copied"
+			setTimeout(() => {
+				copyState = "idle"
+			}, 1500)
+		} catch {
+			copyState = "error"
+			setTimeout(() => {
+				copyState = "idle"
+			}, 2000)
+		}
+		exportMenu?.removeAttribute("open")
+	}
 </script>
 
 <div class="flex flex-col h-full overflow-hidden">
@@ -163,17 +222,31 @@
 					<button type="button" class="btn btn-sm btn-ghost" disabled>
 						<Copy size={13} /> Duplicate
 					</button>
-					<div class="join">
-						<button type="button" class="btn btn-sm btn-ghost join-item" disabled>Export</button>
-						<button
-							type="button"
-							class="btn btn-sm btn-ghost join-item btn-square"
-							disabled
-							aria-label="Export options"
+					<details bind:this={exportMenu} class="dropdown dropdown-end">
+						<summary class="btn btn-sm btn-ghost join-item" aria-label="Export options">
+							<Download size={12} /> Export
+						</summary>
+						<ul
+							class="menu dropdown-content z-10 mt-1 w-44 rounded border border-base-300 bg-base-100 p-1 shadow-md text-[12px]"
 						>
-							<ChevronRight size={12} class="rotate-90" />
-						</button>
-					</div>
+							<li>
+								<button type="button" class="gap-2" onclick={downloadJson} disabled={!job}>
+									<Download size={12} /> Download JSON
+								</button>
+							</li>
+							<li>
+								<button type="button" class="gap-2" onclick={copyJsonToClipboard} disabled={!job}>
+									{#if copyState === "copied"}
+										<Check size={12} class="text-success" /> Copied
+									{:else if copyState === "error"}
+										<TriangleAlert size={12} class="text-error" /> Copy failed
+									{:else}
+										<Clipboard size={12} /> Copy as JSON
+									{/if}
+								</button>
+							</li>
+						</ul>
+					</details>
 					<button
 						type="button"
 						class="btn btn-sm btn-ghost btn-square"
