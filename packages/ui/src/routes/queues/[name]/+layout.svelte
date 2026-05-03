@@ -2,16 +2,7 @@
 	import { invalidateAll } from "$app/navigation"
 	import { page } from "$app/state"
 	import { api } from "$lib/api/client"
-	import {
-		MoreHorizontal,
-		MoreHorizontalIcon,
-		Pause,
-		Play,
-		Plus,
-		RefreshCw,
-		Rows4,
-		TriangleAlert,
-	} from "@lucide/svelte"
+	import { Pause, Play, Plus, RefreshCw, Rows4, TriangleAlert } from "@lucide/svelte"
 	import type { Snippet } from "svelte"
 	import type { LayoutData } from "./$types"
 
@@ -190,9 +181,6 @@
 					aria-label="Refresh"
 				>
 					<RefreshCw size={13} />
-				</button>
-				<button type="button" class="btn btn-sm btn-ghost btn-square" disabled aria-label="More">
-					<MoreHorizontal size={14} />
 				</button>
 			</div>
 		</div>
