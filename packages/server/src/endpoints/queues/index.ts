@@ -9,6 +9,8 @@ import { listJob } from "./jobs/handlers/listJob.js"
 import { promoteJob } from "./jobs/handlers/promoteJob.js"
 import { removeJob } from "./jobs/handlers/removeJob.js"
 import { retryJob } from "./jobs/handlers/retryJob.js"
+import { listSchedulers } from "./schedulers/handlers/listSchedulers.js"
+import { removeScheduler } from "./schedulers/handlers/removeScheduler.js"
 
 /**
  * Registration order matters for routes with literal vs parameterized
@@ -26,4 +28,6 @@ export function createQueuesApp(muleta: Muleta) {
     .openapi(removeJob.route, removeJob.handler(muleta))
     .openapi(retryJob.route, retryJob.handler(muleta))
     .openapi(promoteJob.route, promoteJob.handler(muleta))
+    .openapi(listSchedulers.route, listSchedulers.handler(muleta))
+    .openapi(removeScheduler.route, removeScheduler.handler(muleta))
 }

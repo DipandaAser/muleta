@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { CronExpressionParser } from "cron-parser"
-	import cronstrue from "cronstrue"
+	import { explainCron, formatRunDate, nextRunsForCron } from "$lib/cron"
 
 	type AgeUnit = "s" | "m" | "h" | "d"
 	type RepeatStrategy = "pattern" | "every"
@@ -42,32 +41,11 @@
 		showJobIdHint = false,
 	}: Props = $props()
 
-	let cronExplanation = $derived.by<
-		{ ok: true; text: string } | { ok: false; error: string } | null
-	>(() => {
-		if (!enabled || strategy !== "pattern") return null
-		const p = pattern.trim()
-		if (!p) return null
-		try {
-			const text = cronstrue.toString(p, {
-				throwExceptionOnParseError: true,
-				use24HourTimeFormat: true,
-			})
-			return { ok: true, text }
-		} catch (e) {
-			return { ok: false, error: e instanceof Error ? e.message : "invalid cron" }
-		}
-	})
+	let cronExplanation = $derived(enabled && strategy === "pattern" ? explainCron(pattern) : null)
 
 	let cronNextRun = $derived.by<Date | null>(() => {
 		if (!enabled || strategy !== "pattern") return null
-		const p = pattern.trim()
-		if (!p) return null
-		try {
-			return CronExpressionParser.parse(p).next().toDate()
-		} catch {
-			return null
-		}
+		return nextRunsForCron(pattern, 1)[0] ?? null
 	})
 
 	let everyMs = $derived.by<number | null>(() => {
@@ -76,14 +54,6 @@
 		const ms = Math.max(0, Math.floor(every * EVERY_UNIT_MS[everyUnit]))
 		return ms > 0 ? ms : null
 	})
-
-	function formatNextRun(d: Date): string {
-		// `YYYY-MM-DD HH:mm:ss` — same shape crontab.guru uses, locale-free
-		// so timezone differences don't make the form's output visually
-		// inconsistent across users on the same team.
-		const pad = (n: number) => String(n).padStart(2, "0")
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-	}
 </script>
 
 <div class="flex flex-col gap-1.5">
@@ -156,7 +126,7 @@
 						<div class="text-[11px] flex items-center gap-1.5 text-base-content/55">
 							<span>next at</span>
 							<span class="font-mono-muleta tnum text-base-content/80">
-								{formatNextRun(cronNextRun)}
+								{formatRunDate(cronNextRun)}
 							</span>
 						</div>
 					{/if}

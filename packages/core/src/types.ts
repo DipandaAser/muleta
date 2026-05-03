@@ -192,6 +192,43 @@ export interface WorkerInfo {
   idleSeconds: number
 }
 
+/**
+ * One BullMQ Job Scheduler. Schedulers are the v5+ replacement for
+ * "repeatable jobs" — a single Redis-backed record per `id` that fires
+ * jobs on either a cron `pattern` or a fixed `every` interval. Mirrors
+ * BullMQ's `JobSchedulerJson` plus the queue tag the dashboard needs.
+ *
+ * Either `pattern` or `every` is set, never both. `next` is the next
+ * scheduled fire time (Unix ms); `null` once `limit` is hit or `endDate`
+ * has passed and BullMQ stops issuing it.
+ */
+export interface JobSchedulerInfo {
+  /** Scheduler id — caller-supplied via `upsertJobScheduler`. Unique per queue. */
+  id: string
+  /** Queue this scheduler belongs to. */
+  queue: string
+  /** Job name BullMQ will use when firing. */
+  jobName: string
+  /** Cron pattern, when the schedule is cron-based. */
+  pattern?: string
+  /** Fixed interval in milliseconds, when the schedule is interval-based. */
+  every?: number
+  /** Olson timezone name (cron only). */
+  tz?: string
+  /** Cap on total iterations across the scheduler's lifetime. */
+  limit?: number
+  /** Number of times the scheduler has fired so far. */
+  iterationCount?: number
+  /** Earliest fire time (Unix ms). */
+  startDate?: number
+  /** Latest fire time (Unix ms). */
+  endDate?: number
+  /** Next scheduled fire (Unix ms), or `null` once exhausted. */
+  next: number | null
+  /** Job template — data payload + per-iteration options. */
+  template?: { data?: unknown; opts?: Record<string, unknown> }
+}
+
 export interface QueueRegistry {
   register(config: QueueConfig): void
   has(name: string): boolean
@@ -230,6 +267,25 @@ export interface QueueRegistry {
    * for the offending queue but don't abort the rest.
    */
   getWorkers(): Promise<WorkerInfo[]>
+  /**
+   * List job schedulers registered on the given queue, ordered by next
+   * fire time (ascending — soonest first). Throws if the queue isn't
+   * registered.
+   */
+  getJobSchedulers(name: string): Promise<JobSchedulerInfo[]>
+  /**
+   * Aggregate every scheduler across every registered queue, ordered
+   * globally by next fire time (soonest first). Errors on a single
+   * queue are logged and skipped — they don't abort the rest.
+   */
+  getAllJobSchedulers(): Promise<JobSchedulerInfo[]>
+  /**
+   * Remove a job scheduler from the given queue. Returns `true` when
+   * BullMQ confirmed the removal (the scheduler existed) and `false`
+   * when no scheduler with that id was found. Throws if the queue
+   * isn't registered.
+   */
+  removeJobScheduler(name: string, schedulerId: string): Promise<boolean>
 }
 
 /**
