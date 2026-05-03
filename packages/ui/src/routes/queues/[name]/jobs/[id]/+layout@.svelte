@@ -7,11 +7,9 @@
 	import { age, byteSize, duration, summarizeBackoff, summarizeRemoveOn } from "$lib/jobs/format"
 	import {
 		Check,
-		ChevronRight,
 		Clipboard,
 		Copy,
 		Download,
-		Ellipsis,
 		GitBranch,
 		Pencil,
 		Play,
@@ -292,56 +290,44 @@
 						{/if}
 						Remove
 					</button>
-					<div class="join">
-						<button
-							type="button"
-							class="btn btn-sm btn-ghost join-item"
-							onclick={onDuplicate}
-							disabled={!job || actionBusy !== null}
-							title="Enqueue a copy with the same name, data, and policy"
-						>
+					<details bind:this={duplicateMenu} class="dropdown dropdown-end">
+						<summary class="btn btn-sm btn-ghost join-item" aria-label="Duplicate options">
 							{#if actionBusy === "duplicate"}
 								<span class="loading loading-spinner loading-xs"></span>
 							{:else}
 								<Copy size={13} />
 							{/if}
 							Duplicate
-						</button>
-						<details bind:this={duplicateMenu} class="dropdown dropdown-end">
-							<summary
-								class="btn btn-sm btn-ghost join-item btn-square"
-								aria-label="Duplicate options"
-							>
-								<ChevronRight size={12} class="rotate-90" />
-							</summary>
-							<ul
-								class="menu dropdown-content z-10 mt-1 w-56 rounded border border-base-300 bg-base-100 p-1 shadow-md text-[12px]"
-							>
-								<li>
-									<button
-										type="button"
-										class="gap-2"
-										onclick={() => {
-											duplicateMenu?.removeAttribute("open")
-											onDuplicate()
-										}}
-										disabled={!job}
-									>
-										<Copy size={12} /> Duplicate
-									</button>
-								</li>
-								<li>
-									<a
-										href="/queues/{name}/add-job?from={id}"
-										onclick={() => duplicateMenu?.removeAttribute("open")}
-										class="gap-2"
-									>
-										<Pencil size={12} /> Duplicate with overrides…
-									</a>
-								</li>
-							</ul>
-						</details>
-					</div>
+						</summary>
+						<ul
+							class="menu dropdown-content z-10 mt-1 w-56 rounded border border-base-300 bg-base-100 p-1 shadow-md text-[12px]"
+						>
+							<li>
+								<button
+									type="button"
+									class="gap-2"
+									onclick={() => {
+										duplicateMenu?.removeAttribute("open")
+										onDuplicate()
+									}}
+									disabled={!job}
+									title="Enqueue a copy with the same name, data, and policy"
+								>
+									<Copy size={12} /> Duplicate
+								</button>
+							</li>
+							<li>
+								<a
+									href="/queues/{name}/add-job?from={id}"
+									onclick={() => duplicateMenu?.removeAttribute("open")}
+									aria-label="Duplicate with overrides"
+									class="gap-2"
+								>
+									<Pencil size={12} /> Duplicate with overrides…
+								</a>
+							</li>
+						</ul>
+					</details>
 					<details bind:this={exportMenu} class="dropdown dropdown-end">
 						<summary class="btn btn-sm btn-ghost join-item" aria-label="Export options">
 							<Download size={12} /> Export
@@ -375,9 +361,6 @@
 						disabled={actionBusy !== null}
 					>
 						<RefreshCw size={13} />
-					</button>
-					<button type="button" class="btn btn-sm btn-ghost btn-square" disabled aria-label="More">
-						<Ellipsis size={14} />
 					</button>
 				</div>
 			</div>
