@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation"
 	import { page } from "$app/state"
-	import { api, type AddJobOptions, type AddJobRequest, type Queue } from "$lib/api/client"
+	import { untrack } from "svelte"
+	import {
+		api,
+		type AddJobOptions,
+		type AddJobRequest,
+		type JobDetail,
+		type Queue,
+	} from "$lib/api/client"
 	import CodeEditor from "$lib/components/code/CodeEditor.svelte"
 	import OptionsGrid from "$lib/jobs/add-job/OptionsGrid.svelte"
 	import PreviewPane from "$lib/jobs/add-job/PreviewPane.svelte"
@@ -30,40 +37,178 @@
 		d: 86_400_000,
 	}
 
-	let { data } = $props<{ data: { jobNames: string[] } }>()
+	/**
+	 * Pick the largest whole-number unit that divides `ms` evenly so the
+	 * pre-filled "delay 60000 ms" reads as "1 m" instead of dumping the
+	 * raw millisecond count into an ms input.
+	 */
+	function fitDelay(ms: number): { value: number; unit: DelayUnit } {
+		if (ms <= 0) return { value: 0, unit: "s" }
+		if (ms % 60_000 === 0) return { value: ms / 60_000, unit: "m" }
+		if (ms % 1000 === 0) return { value: ms / 1000, unit: "s" }
+		return { value: ms, unit: "ms" }
+	}
+
+	function fitAgeSeconds(seconds: number): { value: number; unit: AgeUnit } {
+		if (seconds <= 0) return { value: 0, unit: "s" }
+		if (seconds % 86_400 === 0) return { value: seconds / 86_400, unit: "d" }
+		if (seconds % 3600 === 0) return { value: seconds / 3600, unit: "h" }
+		if (seconds % 60 === 0) return { value: seconds / 60, unit: "m" }
+		return { value: seconds, unit: "s" }
+	}
+
+	function fitEveryMs(ms: number): { value: number; unit: AgeUnit } {
+		if (ms <= 0) return { value: 0, unit: "m" }
+		if (ms % 86_400_000 === 0) return { value: ms / 86_400_000, unit: "d" }
+		if (ms % 3_600_000 === 0) return { value: ms / 3_600_000, unit: "h" }
+		if (ms % 60_000 === 0) return { value: ms / 60_000, unit: "m" }
+		return { value: Math.max(1, Math.round(ms / 1000)), unit: "s" }
+	}
+
+	/**
+	 * Convert the various date shapes BullMQ stores (ISO string or epoch
+	 * ms) to the `YYYY-MM-DDTHH:mm` shape `<input type="datetime-local">`
+	 * expects. Returns "" if the value is missing or unparseable.
+	 */
+	function toLocalInput(v: unknown): string {
+		const d = typeof v === "number" ? new Date(v) : typeof v === "string" && v ? new Date(v) : null
+		if (!d || Number.isNaN(d.getTime())) return ""
+		return d.toISOString().slice(0, 16)
+	}
+
+	function parseKeepJobs(v: unknown): {
+		enabled: boolean
+		count: number | null
+		age: number | null
+		ageUnit: AgeUnit
+	} {
+		// BullMQ stores `removeOnComplete` / `removeOnFail` in five shapes —
+		// undefined, false, true, number, or `{ count?, age? }`. We map each
+		// back to the form's three knobs (toggle + count + age + ageUnit).
+		const def = { enabled: false, count: null, age: null, ageUnit: "s" as AgeUnit }
+		if (v === undefined || v === null || v === false) return def
+		if (v === true) return { enabled: true, count: null, age: null, ageUnit: "s" }
+		if (typeof v === "number") return { enabled: true, count: v, age: null, ageUnit: "s" }
+		if (typeof v === "object") {
+			const o = v as { count?: unknown; age?: unknown }
+			const count = typeof o.count === "number" ? o.count : null
+			if (typeof o.age === "number") {
+				const fit = fitAgeSeconds(o.age)
+				return { enabled: true, count, age: fit.value, ageUnit: fit.unit }
+			}
+			return { enabled: true, count, age: null, ageUnit: "s" }
+		}
+		return def
+	}
+
+	function parseRepeat(v: unknown) {
+		const def = {
+			enabled: false,
+			strategy: "pattern" as RepeatStrategy,
+			pattern: "0 */15 * * * *",
+			every: null as number | null,
+			everyUnit: "m" as AgeUnit,
+			limit: null as number | null,
+			immediately: false,
+			startDate: "",
+			endDate: "",
+		}
+		if (!v || typeof v !== "object") return def
+		const r = v as Record<string, unknown>
+		const out = { ...def, enabled: true }
+		if (typeof r.pattern === "string" && r.pattern) {
+			out.strategy = "pattern"
+			out.pattern = r.pattern
+			if (typeof r.immediately === "boolean") out.immediately = r.immediately
+		} else if (typeof r.every === "number" && r.every > 0) {
+			out.strategy = "every"
+			const fit = fitEveryMs(r.every)
+			out.every = fit.value
+			out.everyUnit = fit.unit
+		} else {
+			return def
+		}
+		if (typeof r.limit === "number" && r.limit > 0) out.limit = r.limit
+		out.startDate = toLocalInput(r.startDate)
+		out.endDate = toLocalInput(r.endDate)
+		return out
+	}
+
+	/**
+	 * Project a source `JobDetail` onto the form's initial values. Returns
+	 * the same defaults when called with `null`, so the form's boot-up
+	 * shape is identical regardless of whether `?from=` was set.
+	 */
+	function buildPrefill(src: JobDetail | null) {
+		const opts = (src?.opts ?? {}) as Record<string, unknown>
+		const delayMs = typeof opts.delay === "number" ? opts.delay : 0
+		const backoff =
+			opts.backoff && typeof opts.backoff === "object"
+				? (opts.backoff as { type?: unknown; delay?: unknown })
+				: null
+		return {
+			name: src?.name ?? "",
+			jobId: typeof opts.jobId === "string" ? opts.jobId : "",
+			dataText: src ? JSON.stringify(src.data ?? {}, null, 2) : "{}",
+			priority: typeof opts.priority === "number" ? opts.priority : 0,
+			attempts: typeof opts.attempts === "number" ? opts.attempts : 3,
+			delay: fitDelay(delayMs),
+			backoff: {
+				type:
+					backoff?.type === "fixed" || backoff?.type === "exponential"
+						? backoff.type
+						: ("exponential" as BackoffType),
+				delay: typeof backoff?.delay === "number" ? backoff.delay : 2000,
+			},
+			removeOnComplete: parseKeepJobs(opts.removeOnComplete),
+			removeOnFail: parseKeepJobs(opts.removeOnFail),
+			repeat: parseRepeat(opts.repeat),
+		}
+	}
+
+	let { data } = $props<{
+		data: { jobNames: string[]; sourceJob: JobDetail | null; fromError: string | null }
+	}>()
 
 	let queue = $derived(page.data.queue as Queue | null)
 	let queueName = $derived(page.params.name as string)
 
-	let name = $state("")
-	let jobId = $state("")
-	let dataText = $state("{}")
-	let priority = $state(0)
-	let attempts = $state(3)
-	let delay = $state(0)
-	let delayUnit = $state<DelayUnit>("s")
-	let backoffType = $state<BackoffType>("exponential")
-	let backoffDelay = $state(2000)
+	// Initial form values, optionally seeded from a `?from=<id>` source
+	// job. `untrack` makes this an explicit one-shot read — once the
+	// form is interactive, edits live in the `$state` slots below and
+	// don't react to subsequent loader reruns (which would otherwise
+	// stomp on whatever the user just typed).
+	const seed = untrack(() => buildPrefill(data.sourceJob))
 
-	let removeOnComplete = $state(false)
-	let removeOnCompleteCount = $state<number | null>(null)
-	let removeOnCompleteAge = $state<number | null>(null)
-	let removeOnCompleteAgeUnit = $state<AgeUnit>("s")
+	let name = $state(seed.name)
+	let jobId = $state(seed.jobId)
+	let dataText = $state(seed.dataText)
+	let priority = $state(seed.priority)
+	let attempts = $state(seed.attempts)
+	let delay = $state(seed.delay.value)
+	let delayUnit = $state<DelayUnit>(seed.delay.unit)
+	let backoffType = $state<BackoffType>(seed.backoff.type)
+	let backoffDelay = $state(seed.backoff.delay)
 
-	let removeOnFail = $state(false)
-	let removeOnFailCount = $state<number | null>(null)
-	let removeOnFailAge = $state<number | null>(null)
-	let removeOnFailAgeUnit = $state<AgeUnit>("s")
+	let removeOnComplete = $state(seed.removeOnComplete.enabled)
+	let removeOnCompleteCount = $state<number | null>(seed.removeOnComplete.count)
+	let removeOnCompleteAge = $state<number | null>(seed.removeOnComplete.age)
+	let removeOnCompleteAgeUnit = $state<AgeUnit>(seed.removeOnComplete.ageUnit)
 
-	let repeat = $state(false)
-	let repeatStrategy = $state<RepeatStrategy>("pattern")
-	let repeatPattern = $state("0 */15 * * * *")
-	let repeatEvery = $state<number | null>(null)
-	let repeatEveryUnit = $state<AgeUnit>("m")
-	let repeatLimit = $state<number | null>(null)
-	let repeatImmediately = $state(false)
-	let repeatStartDate = $state("")
-	let repeatEndDate = $state("")
+	let removeOnFail = $state(seed.removeOnFail.enabled)
+	let removeOnFailCount = $state<number | null>(seed.removeOnFail.count)
+	let removeOnFailAge = $state<number | null>(seed.removeOnFail.age)
+	let removeOnFailAgeUnit = $state<AgeUnit>(seed.removeOnFail.ageUnit)
+
+	let repeat = $state(seed.repeat.enabled)
+	let repeatStrategy = $state<RepeatStrategy>(seed.repeat.strategy)
+	let repeatPattern = $state(seed.repeat.pattern)
+	let repeatEvery = $state<number | null>(seed.repeat.every)
+	let repeatEveryUnit = $state<AgeUnit>(seed.repeat.everyUnit)
+	let repeatLimit = $state<number | null>(seed.repeat.limit)
+	let repeatImmediately = $state(seed.repeat.immediately)
+	let repeatStartDate = $state(seed.repeat.startDate)
+	let repeatEndDate = $state(seed.repeat.endDate)
 
 	let submitting = $state(false)
 	let submitted = $state(false)
@@ -224,6 +369,30 @@
 		class="flex-1 pl-10 flex flex-col lg:flex-row items-stretch gap-8 min-h-0 overflow-hidden mb-2"
 	>
 		<div id="form-column" class="pt-5 pb-24 flex-1 min-w-0 flex flex-col gap-6 overflow-y-auto">
+			{#if data.sourceJob}
+				<div
+					class="rounded border border-base-300 bg-base-200 px-3 py-2 text-[12px] flex items-center gap-2"
+				>
+					<Check size={12} class="text-success" />
+					<span>
+						Pre-filled from job
+						<a
+							href="/queues/{queueName}/jobs/{data.sourceJob.id}/data"
+							class="font-mono-muleta hover:underline">{data.sourceJob.name} #{data.sourceJob.id}</a
+						>. Tweak any field, then enqueue.
+					</span>
+				</div>
+			{:else if data.fromError}
+				<div
+					class="rounded border px-3 py-2 text-[12px]"
+					style:color="oklch(72% 0.17 20)"
+					style:border-color="oklch(0.64 0.2 18 / 0.35)"
+					style:background="oklch(0.64 0.2 18 / 0.08)"
+				>
+					{data.fromError}
+				</div>
+			{/if}
+
 			<!-- Job picker -->
 			<div class="flex flex-col gap-1.5">
 				<div class="text-[12px] text-base-content/70 flex items-center gap-1.5">
@@ -262,6 +431,12 @@
 						placeholder="auto"
 						class="input input-sm font-mono-muleta w-full"
 					/>
+					{#if repeat}
+						<p class="label text-error/50">
+							BullMQ ignores Job ID for repeating jobs — it derives a deterministic id from the
+							schedule.
+						</p>
+					{/if}
 				</div>
 			</div>
 
