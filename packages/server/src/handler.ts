@@ -19,6 +19,19 @@ export interface CreateHandlerOptions {
    * the standalone app pre-publish, where `dist/ui/` doesn't exist yet).
    */
   assets?: "bundled" | { path: string }
+  /**
+   * Mount path the dashboard will be served at — pinned into the SPA's
+   * `__MULETA_BASE__` global so its API client targets the right URL.
+   * Optional; when omitted, the handler derives the base from each
+   * request's pathname (works for native Hono mounts where the sub-app's
+   * request URL reflects the full mount).
+   *
+   * Set this when your host framework rewrites the request URL before
+   * the handler sees it (e.g. Express's `app.use(path, mw)` strips the
+   * matched prefix), so the SPA's client still knows the original mount.
+   * Does NOT affect routing — that's your framework's job.
+   */
+  basePath?: string
 }
 
 /**
@@ -65,8 +78,13 @@ export function createHandler(opts: CreateHandlerOptions) {
 
     // SPA fallback: any unmatched path returns index.html with the
     // base-URL injection so the client-side router takes over and
-    // the API client targets the right origin + mount.
-    app.get("/*", (c) => c.html(injectBaseUrl(indexHtml, new URL(c.req.url).pathname)))
+    // the API client targets the right origin + mount. Prefer the
+    // explicit `basePath` (set by adapters that lose mount info via
+    // path stripping); otherwise derive from the request pathname.
+    app.get("/*", (c) => {
+      const base = opts.basePath ?? new URL(c.req.url).pathname
+      return c.html(injectBaseUrl(indexHtml, base))
+    })
   }
 
   return app

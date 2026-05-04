@@ -1,0 +1,18 @@
+{
+  "name": "@muleta-dev/example-embed-node-http",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal raw `node:http` server embedding the muleta dashboard. Same pattern works for AdonisJS / h3.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@muleta-dev/core": "workspace:*",
+    "@muleta-dev/server": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
