@@ -1,0 +1,14 @@
+demo.muleta.dev {
+	encode zstd gzip
+	reverse_proxy muleta:3737
+
+	# Cache hashed SPA assets aggressively. The injected base-URL HTML
+	# stays cache-busted by the immutable hashes in the asset URLs.
+	@assets path /_app/immutable/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	# Don't cache the index HTML — it's per-mount-rewritten at request
+	# time and we want CDN-style intermediaries to skip it.
+	@html path /
+	header @html Cache-Control "no-store"
+}

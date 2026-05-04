@@ -1,0 +1,65 @@
+# Public demo stack for muleta — Redis + the dashboard image + a job
+# producer/worker process + Caddy fronting demo.muleta.dev for SSL.
+#
+# Bring up locally:
+#
+#   cd apps/demo && docker compose up --build
+#
+# On the deploy host (any VPS with Docker), give the box a public IP,
+# point demo.muleta.dev's A/AAAA records at it, then `docker compose up
+# -d --build`. Caddy will obtain certs automatically on first request.
+#
+# Redis runs without persistence so a container restart wipes state —
+# bounded demo, no growing data files. The producer keeps the dashboard
+# busy after every restart.
+
+services:
+  redis:
+    image: redis:7-alpine
+    # No volume = no persistence = clean slate every restart.
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  muleta:
+    image: ghcr.io/muleta-dev/muleta:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      MULETA_REDIS_URL: redis://redis:6379
+    restart: unless-stopped
+
+  demo:
+    build:
+      context: ../..
+      dockerfile: apps/demo/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      DEMO_PRODUCE_INTERVAL_MS: "600"
+      DEMO_FLOW_INTERVAL_MS: "120000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - muleta
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
