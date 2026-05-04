@@ -1,6 +1,6 @@
 {
   "name": "@muleta-dev/example-embed-hono",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Minimal Hono app embedding the muleta dashboard.",
   "type": "module",

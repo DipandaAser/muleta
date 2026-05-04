@@ -1,6 +1,6 @@
 {
   "name": "@muleta-dev/server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Embed the muleta BullMQ dashboard in your Node app — Hono-based handler with framework adapters, ships with the SPA bundled.",
   "license": "Apache-2.0",
   "author": "muleta-dev",

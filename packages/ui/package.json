@@ -1,6 +1,6 @@
 {
   "name": "@muleta-dev/ui",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "SvelteKit SPA for the muleta dashboard.",
   "license": "Apache-2.0",
   "private": true,
