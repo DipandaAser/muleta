@@ -96,10 +96,7 @@ function injectBaseUrl(html: string, mountPath: string): string {
   const base = mountPath.replace(/\/?(index\.html)?$/, "")
   const tag = `<script>window.__MULETA_BASE__=${JSON.stringify(base)};</script>`
   let out = html.includes("<head>") ? html.replace("<head>", `<head>${tag}`) : tag + html
-  out = out.replace(
-    /(__sveltekit_[a-z0-9]+\s*=\s*\{\s*base:\s*)""/,
-    `$1${JSON.stringify(base)}`,
-  )
+  out = out.replace(/(__sveltekit_[a-z0-9]+\s*=\s*\{\s*base:\s*)""/, `$1${JSON.stringify(base)}`)
   if (base) out = out.replace(/(["'(])\/_app\//g, `$1${base}/_app/`)
   return out
 }
