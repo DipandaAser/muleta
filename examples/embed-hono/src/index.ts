@@ -12,6 +12,7 @@ const muleta = await createMuleta({ redis: { url: REDIS_URL } })
 const dashboard = createHandler({
   endpoints: createEndpoints(muleta),
   assets: "bundled",
+  basePath: MOUNT,
 })
 
 const app = new Hono()

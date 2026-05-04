@@ -20,16 +20,18 @@ export interface CreateHandlerOptions {
    */
   assets?: "bundled" | { path: string }
   /**
-   * Mount path the dashboard will be served at — pinned into the SPA's
-   * `__MULETA_BASE__` global so its API client targets the right URL.
-   * Optional; when omitted, the handler derives the base from each
-   * request's pathname (works for native Hono mounts where the sub-app's
-   * request URL reflects the full mount).
+   * Mount path the dashboard is served at, e.g. `/admin/queues`. Used
+   * to (1) inject the SPA's `__MULETA_BASE__` global so its API client
+   * and SvelteKit router know where they're mounted, and (2) strip the
+   * prefix when looking up static assets on disk. Required when
+   * mounting under any sub-path; omit (or set to `""`) when serving at
+   * root.
    *
-   * Set this when your host framework rewrites the request URL before
-   * the handler sees it (e.g. Express's `app.use(path, mw)` strips the
-   * matched prefix), so the SPA's client still knows the original mount.
-   * Does NOT affect routing — that's your framework's job.
+   * Cannot be auto-derived: in native Hono mounts the sub-app sees the
+   * unaltered request URL, so we can't tell the mount root apart from a
+   * deep-linked SPA route. Express-style adapters strip the prefix
+   * before the handler runs, so we lose the mount entirely. Pass it
+   * explicitly. Does NOT affect routing — that's your framework's job.
    */
   basePath?: string
 }
@@ -113,6 +115,22 @@ export function createHandler(opts: CreateHandlerOptions) {
     // post-build.
     const indexHtml = readFileSync(resolve(path, "index.html"), "utf-8")
 
+    // Native Hono mounts (`app.route("/admin/queues", dashboard)`) do
+    // NOT strip the prefix from `c.req.path`, so `serveStatic` would
+    // look up `<dist/ui>/admin/queues/_app/foo.js` (404) instead of
+    // `<dist/ui>/_app/foo.js`. Express adapters DO strip. Strip the
+    // configured `basePath` here so both modes hit the same on-disk
+    // path. Caller-provided `basePath` is the source of truth — there's
+    // no reliable way to derive the mount from `c.req.url` in native
+    // Hono, since Hono passes the unaltered URL down to the sub-app.
+    const base = opts.basePath ?? ""
+    const stripBase = (p: string): string => {
+      if (!base) return p
+      if (p === base) return "/"
+      if (p.startsWith(`${base}/`)) return p.slice(base.length)
+      return p
+    }
+
     // Static assets (anything with a file extension — `_app/*.js`,
     // `_app/*.css`, `favicon.ico`, etc.) are served raw from disk.
     // Path-only requests (e.g. `/`, `/queues/emails`, `/jobs/123/data`)
@@ -123,19 +141,14 @@ export function createHandler(opts: CreateHandlerOptions) {
     // page origin and miss the mount prefix.
     app.use("/*", async (c, next) => {
       if (/\.[a-z0-9]+$/i.test(new URL(c.req.url).pathname)) {
-        return serveStatic({ root: path })(c, next)
+        return serveStatic({ root: path, rewriteRequestPath: stripBase })(c, next)
       }
       await next()
     })
 
-    // SPA fallback. Prefer the explicit `basePath` (set by adapters
-    // that lose mount info via path stripping, e.g. Express);
-    // otherwise derive from the request pathname (works for native
-    // Hono mounts where the sub-app sees the full mount URL).
-    app.get("/*", (c) => {
-      const base = opts.basePath ?? new URL(c.req.url).pathname
-      return c.html(injectBaseUrl(indexHtml, base))
-    })
+    // SPA fallback. Inject the configured base path so the SPA's API
+    // client and SvelteKit router know where they're mounted.
+    app.get("/*", (c) => c.html(injectBaseUrl(indexHtml, base)))
   }
 
   return app
