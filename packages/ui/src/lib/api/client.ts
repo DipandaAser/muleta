@@ -40,6 +40,17 @@ export type JobScheduler = ListJobSchedulersResponse["schedulers"][number]
 
 export type ListAllSchedulersResponse = InferResponseType<typeof api.api.v1.schedulers.$get, 200>
 
+export type ListFlowsResponse = InferResponseType<
+  (typeof api.api.v1.queues)[":name"]["flows"]["$get"],
+  200
+>
+export type FlowSummary = ListFlowsResponse["flows"][number]
+
+export type FlowJobNode = InferResponseType<
+  (typeof api.api.v1.queues)[":name"]["flows"][":id"]["$get"],
+  200
+>
+
 /**
  * Body shape for `POST /api/v1/queues/:name/jobs`. Inferred from the route so
  * the form's outgoing payload can never drift from the server schema.

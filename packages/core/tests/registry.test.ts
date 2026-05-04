@@ -1,4 +1,4 @@
-import { Queue, Worker } from "bullmq"
+import { FlowProducer, Queue, Worker } from "bullmq"
 import { Redis } from "ioredis"
 import { GenericContainer, type StartedTestContainer } from "testcontainers"
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest"
@@ -531,6 +531,132 @@ describe("QueueRegistry", () => {
 
     it("throws for unregistered queues", async () => {
       await expect(muleta.queues.getJobSchedulers("nope")).rejects.toThrow(/not registered/)
+    })
+  })
+
+  describe("getFlows / getFlowTree", () => {
+    it("returns an empty list when no flows exist", async () => {
+      const flows = await muleta.queues.getFlows("emails")
+      expect(flows).toEqual([])
+    })
+
+    it("surfaces a parent job with children as a flow root", async () => {
+      muleta.queues.register({ name: "rendering" })
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        const tree = await fp.add({
+          name: "send-digest",
+          queueName: "emails",
+          data: { batchId: "b1" },
+          children: [
+            { name: "render-pdf", queueName: "rendering", data: { i: 0 } },
+            { name: "render-pdf", queueName: "rendering", data: { i: 1 } },
+          ],
+        })
+        const rootId = String(tree.job.id)
+
+        const flows = await muleta.queues.getFlows("emails")
+        expect(flows).toHaveLength(1)
+        const [flow] = flows
+        expect(flow).toMatchObject({
+          id: rootId,
+          queue: "emails",
+          name: "send-digest",
+          childrenCount: 2,
+        })
+        expect(typeof flow?.addedAt).toBe("number")
+      } finally {
+        await fp.close()
+        const renderingQueue = new Queue("rendering", { connection: producerConnection })
+        await renderingQueue.obliterate({ force: true }).catch(() => {})
+        await renderingQueue.close()
+      }
+    })
+
+    it("skips parent-less jobs that have no children", async () => {
+      // A regular fire-and-forget add — no children, so shouldn't show
+      // up as a flow root even though it has no parent.
+      await producer.add("send", { to: "a@b" })
+
+      const flows = await muleta.queues.getFlows("emails")
+      expect(flows).toEqual([])
+    })
+
+    it("skips jobs that have a parentKey (i.e. are themselves children)", async () => {
+      // Pin the child explicitly to the same queue as the parent so
+      // both surface in the queue's job list, then verify the listing
+      // returns only the root.
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        const tree = await fp.add({
+          name: "parent-job",
+          queueName: "emails",
+          data: {},
+          children: [{ name: "child-job", queueName: "emails", data: {} }],
+        })
+        const rootId = String(tree.job.id)
+
+        const flows = await muleta.queues.getFlows("emails")
+        const ids = flows.map((f) => f.id)
+        expect(ids).toContain(rootId)
+        // The child has a parentKey, so getFlows must not include it.
+        expect(flows).toHaveLength(1)
+      } finally {
+        await fp.close()
+      }
+    })
+
+    it("returns a recursive tree from getFlowTree, threading parentId", async () => {
+      muleta.queues.register({ name: "rendering" })
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        const tree = await fp.add({
+          name: "send-digest",
+          queueName: "emails",
+          data: { batchId: "b1" },
+          children: [
+            {
+              name: "render-pdf",
+              queueName: "rendering",
+              data: { i: 0 },
+              children: [{ name: "compress", queueName: "rendering", data: { i: 0 } }],
+            },
+          ],
+        })
+        const rootId = String(tree.job.id)
+
+        const node = await muleta.queues.getFlowTree("emails", rootId)
+        expect(node).not.toBeNull()
+        expect(node?.id).toBe(rootId)
+        expect(node?.parentId).toBeNull()
+        expect(node?.children).toHaveLength(1)
+
+        const child = node?.children[0]
+        expect(child?.parentId).toBe(rootId)
+        expect(child?.queue).toBe("rendering")
+        expect(child?.name).toBe("render-pdf")
+        expect(child?.children).toHaveLength(1)
+
+        const grandchild = child?.children[0]
+        expect(grandchild?.parentId).toBe(child?.id)
+        expect(grandchild?.name).toBe("compress")
+        expect(grandchild?.children).toEqual([])
+      } finally {
+        await fp.close()
+        const renderingQueue = new Queue("rendering", { connection: producerConnection })
+        await renderingQueue.obliterate({ force: true }).catch(() => {})
+        await renderingQueue.close()
+      }
+    })
+
+    it("returns null from getFlowTree when the root id doesn't exist", async () => {
+      const node = await muleta.queues.getFlowTree("emails", "does-not-exist")
+      expect(node).toBeNull()
+    })
+
+    it("throws for unregistered queues", async () => {
+      await expect(muleta.queues.getFlows("nope")).rejects.toThrow(/not registered/)
+      await expect(muleta.queues.getFlowTree("nope", "1")).rejects.toThrow(/not registered/)
     })
   })
 

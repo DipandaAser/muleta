@@ -1,5 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi"
 import type { Muleta } from "@muleta-dev/core"
+import { getFlow } from "./flows/handlers/getFlow.js"
+import { listFlows } from "./flows/handlers/listFlows.js"
 import { getQueue } from "./handlers/getQueue.js"
 import { listQueues } from "./handlers/listQueues.js"
 import { pauseQueue } from "./handlers/pauseQueue.js"
@@ -34,4 +36,6 @@ export function createQueuesApp(muleta: Muleta) {
     .openapi(removeScheduler.route, removeScheduler.handler(muleta))
     .openapi(pauseQueue.route, pauseQueue.handler(muleta))
     .openapi(resumeQueue.route, resumeQueue.handler(muleta))
+    .openapi(listFlows.route, listFlows.handler(muleta))
+    .openapi(getFlow.route, getFlow.handler(muleta))
 }

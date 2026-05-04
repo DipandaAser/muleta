@@ -1,5 +1,6 @@
 import type { Redis } from "ioredis"
 import { createDiscoverOps, DEFAULT_BULLMQ_PREFIX } from "./discover.js"
+import { createFlowOps } from "./flows/operations.js"
 import { createJobOps } from "./jobs/operations.js"
 import { createLifecycleOps } from "./lifecycle.js"
 import { createSchedulerOps } from "./schedulers/operations.js"
@@ -46,11 +47,13 @@ export function createQueueRegistry(redis: Redis): InternalQueueRegistry {
   const jobs = createJobOps(state)
   const schedulers = createSchedulerOps(state)
   const workers = createWorkerOps(state)
+  const flows = createFlowOps(state)
   return {
     ...lifecycle,
     ...discover,
     ...jobs,
     ...schedulers,
     ...workers,
+    ...flows,
   }
 }

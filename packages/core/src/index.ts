@@ -1,5 +1,10 @@
 export type { HealthStatus, RedisHealth } from "./health/types.js"
 export { createMuleta } from "./muleta.js"
+export type {
+  FlowJobNode,
+  FlowSummary,
+  GetFlowTreeOptions,
+} from "./queue/flows/types.js"
 export { InvalidJobStateError, JobNotFoundError } from "./queue/jobs/errors.js"
 export type {
   AddJobOptions,

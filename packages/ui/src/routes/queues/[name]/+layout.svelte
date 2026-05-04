@@ -61,7 +61,7 @@
 		},
 		{ id: "schedulers", label: "Schedulers", disabled: false },
 		{ id: "workers", label: "Workers", disabled: false },
-		{ id: "flows", label: "Flows", disabled: true },
+		{ id: "flows", label: "Flows", disabled: false },
 		{ id: "metrics", label: "Metrics", disabled: true },
 	]
 
