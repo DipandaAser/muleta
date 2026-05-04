@@ -79,3 +79,24 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      # Trigger a redeploy of the public demo at demo.muleta.dev whenever
+      # a new `:latest` image lands. `:latest` is only pushed on `v*`
+      # semver tags (per the metadata-action config above), so we gate
+      # the webhook on the tag trigger to skip for `:edge` builds from
+      # main pushes.
+      #
+      # Webhook URL is the full Dokploy deploy hook including its
+      # signing token — store it whole as a single secret. If the secret
+      # isn't set, log a warning and skip rather than fail the build.
+      - name: Trigger demo redeploy on Dokploy
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          DOKPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEMO_WEBHOOK }}
+        run: |
+          if [ -z "$DOKPLOY_WEBHOOK" ]; then
+            echo "::warning::DOKPLOY_DEMO_WEBHOOK secret not set — skipping demo redeploy"
+            exit 0
+          fi
+          curl -fsS --max-time 30 -X POST "$DOKPLOY_WEBHOOK" -o /dev/null
+          echo "[demo] redeploy webhook fired"
