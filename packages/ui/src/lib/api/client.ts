@@ -1,11 +1,28 @@
 import type { Handler } from "@muleta-dev/server"
 import { hc, type InferRequestType, type InferResponseType } from "hono/client"
 
+declare global {
+  interface Window {
+    /**
+     * Mount path the dashboard was served from, injected into
+     * `index.html` by `@muleta-dev/server`'s handler at request time.
+     * Empty string when served at root. Lets the same SPA bundle work
+     * under `/admin/queues`, a subdomain, or anywhere else without a
+     * per-mount rebuild.
+     */
+    __MULETA_BASE__?: string
+  }
+}
+
 /**
- * Base URL for the muleta API. Same-origin in both dev (Vite proxy) and
- * production (standalone serves the SPA + API on the same port).
+ * Base URL for the muleta API. Reads `window.__MULETA_BASE__` first
+ * (set by the embedded handler), falls back to `window.location.origin`
+ * for dev (Vite proxy) and the SSR/test default.
  */
-const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3737"
+const baseUrl =
+  typeof window !== "undefined"
+    ? window.location.origin + (window.__MULETA_BASE__ ?? "")
+    : "http://localhost:3737"
 
 export const api = hc<Handler>(baseUrl)
 

@@ -6,8 +6,14 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "build/**", ".svelte-kit/**"]
     },
+    "@muleta-dev/ui#build": {
+      "outputs": ["build/**", ".svelte-kit/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@muleta-dev/ui#typecheck": {
       "outputs": []
     },
     "test": {
