@@ -2,6 +2,7 @@
 	import { page } from "$app/state"
 	import type { Queue } from "$lib/api/client"
 	import { age } from "$lib/jobs/format"
+	import { paths } from "$lib/paths"
 	import { ChartBar, ChevronRight, TriangleAlert } from "@lucide/svelte"
 	import type { PageProps } from "./$types"
 
@@ -79,7 +80,7 @@
 				</span>
 				{#if data.recentFailed.total > 0}
 					<a
-						href="/queues/{name}/jobs"
+						href={paths.queueJobs(name)}
 						class="text-[11px] normal-case tracking-normal text-base-content/60 hover:text-base-content flex items-center gap-0.5"
 					>
 						View all <ChevronRight size={12} />
@@ -99,7 +100,7 @@
 			{:else}
 				{#each data.recentFailed.jobs as job (job.id)}
 					<a
-						href="/queues/{name}/jobs/{job.id}/data"
+						href={paths.jobData(name, job.id)}
 						class="flex items-center gap-3 px-5 h-14 border-b border-base-300 last:border-b-0 hover:bg-base-200/60 text-[12.5px]"
 					>
 						<div class="min-w-0 flex-1">
@@ -147,7 +148,7 @@
 				</span>
 				{#if data.recentActive.total > 0}
 					<a
-						href="/queues/{name}/jobs"
+						href={paths.queueJobs(name)}
 						class="text-[11px] normal-case tracking-normal text-base-content/60 hover:text-base-content flex items-center gap-0.5"
 					>
 						View all <ChevronRight size={12} />
@@ -167,7 +168,7 @@
 			{:else}
 				{#each data.recentActive.jobs as job (job.id)}
 					<a
-						href="/queues/{name}/jobs/{job.id}/data"
+						href={paths.jobData(name, job.id)}
 						class="flex items-center gap-3 px-5 h-14 border-b border-base-300 last:border-b-0 hover:bg-base-200/60 text-[12.5px]"
 					>
 						<div class="min-w-0 flex-1">

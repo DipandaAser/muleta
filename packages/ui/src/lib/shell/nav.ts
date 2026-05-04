@@ -1,5 +1,6 @@
 import { ChartBar, Clock, Code, GitFork, Plug, Rows4, Server, Shield } from "@lucide/svelte"
 import type { Component } from "svelte"
+import { paths } from "$lib/paths"
 
 export interface NavItem {
   id: string
@@ -21,10 +22,10 @@ export const NAV: NavSection[] = [
   {
     title: "Dashboard",
     items: [
-      { id: "queues", label: "Queues", icon: Rows4, href: "/queues" },
-      { id: "flows", label: "Flows", icon: GitFork, iconClass: "rotate-180", href: "/flows" },
-      { id: "workers", label: "Workers", icon: Server, href: "/workers" },
-      { id: "schedulers", label: "Schedulers", icon: Clock, href: "/schedulers" },
+      { id: "queues", label: "Queues", icon: Rows4, href: paths.queues() },
+      { id: "flows", label: "Flows", icon: GitFork, iconClass: "rotate-180", href: paths.flows() },
+      { id: "workers", label: "Workers", icon: Server, href: paths.workers() },
+      { id: "schedulers", label: "Schedulers", icon: Clock, href: paths.schedulers() },
       { id: "metrics", label: "Metrics", icon: ChartBar },
     ],
   },

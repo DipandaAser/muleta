@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { FlowJobNode } from "$lib/api/client"
 	import StateBadge from "$lib/components/StateBadge.svelte"
+	import { paths } from "$lib/paths"
 	import { Handle, Position, type NodeProps } from "@xyflow/svelte"
 
 	type Data = { node: FlowJobNode; queueName: string }
@@ -19,7 +20,7 @@
 </script>
 
 <a
-	href="/queues/{n.queue}/jobs/{n.id}/data"
+	href={paths.jobData(n.queue, n.id)}
 	class="flow-node block rounded border border-base-300 bg-base-100 px-3 py-2 text-left no-underline hover:bg-base-200/40 transition-colors min-w-55 max-w-65"
 	title="Open job #{n.id} in a new tab"
 >

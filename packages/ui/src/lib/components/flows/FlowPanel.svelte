@@ -3,6 +3,7 @@
 	import { api, type FlowJobNode, type FlowSummary } from "$lib/api/client"
 	import StateBadge from "$lib/components/StateBadge.svelte"
 	import { age } from "$lib/jobs/format"
+	import { paths } from "$lib/paths"
 	import {
 		GitFork,
 		ListTree,
@@ -458,7 +459,7 @@
 			{/if}
 		</div>
 		<a
-			href="/queues/{node.queue}/jobs/{node.id}/data"
+			href={paths.jobData(node.queue, node.id)}
 			class="text-[11px] hover:underline text-base-content/55 shrink-0"
 		>
 			open →

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createQueuesSubscription } from "$lib/api/queues.svelte"
+	import { paths } from "$lib/paths"
 	import { RefreshCw, Search, TriangleAlert } from "@lucide/svelte"
 	import { onDestroy } from "svelte"
 	import type { PageData } from "./$types"
@@ -191,7 +192,7 @@
 			{:else}
 				{#each sorted as q (q.name)}
 					<a
-						href="/queues/{q.name}"
+						href={paths.queue(q.name)}
 						class="grid items-center px-6 h-12 text-[12.5px] border-b border-base-300 last:border-b-0 hover:bg-base-200/60"
 						style="grid-template-columns: 2fr 56px repeat(6, 64px) 120px;"
 					>
