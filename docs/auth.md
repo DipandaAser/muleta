@@ -88,13 +88,17 @@ const dashboard = createHandler({
   basePath: "/admin/queues",
 })
 
-router
-  .any("/admin/queues/*", async ({ request, response }) => {
-    await honoToNode(dashboard, request.request, response.response, {
-      stripPath: "/admin/queues",
-    })
+const handle = async ({ request, response }) => {
+  await honoToNode(dashboard, request.request, response.response, {
+    stripPath: "/admin/queues",
   })
-  .use(middleware.auth(), middleware.requireAdmin()) // your existing middleware
+}
+
+// AdonisJS's `*` wildcard requires at least one segment after it, so
+// the bare `/admin/queues` URL isn't matched by `/admin/queues/*` alone.
+// Register both routes with the same auth middleware.
+router.any("/admin/queues", handle).use(middleware.auth(), middleware.requireAdmin())
+router.any("/admin/queues/*", handle).use(middleware.auth(), middleware.requireAdmin())
 ```
 
 ## What "logged in" should mean

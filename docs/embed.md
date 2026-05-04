@@ -136,13 +136,18 @@ const dashboard = createHandler({
   basePath: MOUNT,
 })
 
-router
-  .any(`${MOUNT}/*`, async ({ request, response }) => {
-    await honoToNode(dashboard, request.request, response.response, {
-      stripPath: MOUNT,
-    })
+const handle = async ({ request, response }) => {
+  await honoToNode(dashboard, request.request, response.response, {
+    stripPath: MOUNT,
   })
-  .use(middleware.auth(), middleware.requireAdmin())
+}
+
+// Two routes are needed: AdonisJS's `*` wildcard requires at least one
+// segment after it, so `${MOUNT}/*` doesn't match the bare `${MOUNT}`
+// URL the browser hits first. Pair them so both the mount root and any
+// sub-route resolve to the same handler.
+router.any(MOUNT, handle).use(middleware.auth(), middleware.requireAdmin())
+router.any(`${MOUNT}/*`, handle).use(middleware.auth(), middleware.requireAdmin())
 ```
 
 `stripPath` is required: Adonis doesn't strip the matched mount automatically.
