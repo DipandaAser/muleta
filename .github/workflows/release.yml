@@ -55,6 +55,14 @@ jobs:
           commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bootstrap-only — npm Trusted Publishing requires the package to
+          # already exist on npm (or a pending trusted publisher to be
+          # configured). For the very first publish under a new scope,
+          # neither holds, so we fall back to a granular token. After the
+          # first publish lands, configure a trusted publisher per package
+          # on npmjs.com, then drop this secret and remove this env line —
+          # OIDC takes over and there's no long-lived token to rotate.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # changesets pushes per-package git tags (e.g. `@muleta-dev/server@0.1.0`),
       # but the Docker workflow's `tags: ["v*"]` filter expects a single
