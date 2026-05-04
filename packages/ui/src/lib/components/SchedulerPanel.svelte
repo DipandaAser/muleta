@@ -2,6 +2,7 @@
 	import { invalidateAll } from "$app/navigation"
 	import { api, type JobScheduler } from "$lib/api/client"
 	import { explainCron, formatRelative, formatRunDate, nextRunsForCron } from "$lib/cron"
+	import { paths } from "$lib/paths"
 	import { Clock, Plus, Trash2, TriangleAlert } from "@lucide/svelte"
 
 	interface Props {
@@ -23,8 +24,8 @@
 		(selectedId !== null && schedulers.find((s) => s.id === selectedId)) || schedulers[0] || null,
 	)
 	let newSchedulerHref = $derived.by(() => {
-		if (ovverideQueue) return `/queues/${ovverideQueue}/add-job`
-		if (selected) return `/queues/${selected.queue}/add-job?scheduler=${selected.id}`
+		if (ovverideQueue) return paths.addJob(ovverideQueue)
+		if (selected) return paths.addJob(selected.queue, { scheduler: selected.id })
 		return undefined
 	})
 

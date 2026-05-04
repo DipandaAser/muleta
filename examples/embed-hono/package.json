@@ -1,0 +1,21 @@
+{
+  "name": "@muleta-dev/example-embed-hono",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal Hono app embedding the muleta dashboard.",
+  "type": "module",
+  "scripts": {
+    "prestart": "pnpm --filter @muleta-dev/server build",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.14",
+    "@muleta-dev/core": "workspace:*",
+    "@muleta-dev/server": "workspace:*",
+    "hono": "^4.12.14"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

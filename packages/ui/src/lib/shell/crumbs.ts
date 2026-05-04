@@ -1,4 +1,5 @@
 import type { Component } from "svelte"
+import { resolve } from "$app/paths"
 import type { RouteId } from "$app/types"
 
 /**
@@ -43,13 +44,16 @@ export type CrumbFn = (ctx: CrumbContext) => CrumbInput | null
 /**
  * Resolve a route ID against current params, e.g.
  * `routeHref("/queues/[name]/jobs/[id]", { name: "emails", id: "42" })`
- * → `/queues/emails/jobs/42`.
+ * → `/queues/emails/jobs/42`, with `paths.base` prepended so the link
+ * works under any mount path (`/admin/queues`, a subdomain, etc.).
  *
  * Used by the crumb registry to auto-fill `href` when a `_crumb` doesn't
- * provide one, and exported for any other code that wants the same
- * convenience. Doesn't handle SvelteKit's `[[optional]]` / `[...rest]` /
- * matcher syntax — muleta doesn't use them.
+ * provide one. SvelteKit's `resolve` is typed against the literal route
+ * ID; here we accept any ID from the registry, so the cast is intentional.
  */
 export function routeHref(routeId: RouteId, params: Record<string, string>): string {
-  return routeId.replace(/\[(\w+)\]/g, (_, key: string) => params[key] ?? "")
+  // `resolve` is typed against literal route IDs; the registry hands us
+  // any RouteId at runtime, so widen the call signature.
+  const resolveDynamic = resolve as (id: string, params: Record<string, string>) => string
+  return resolveDynamic(routeId, params)
 }

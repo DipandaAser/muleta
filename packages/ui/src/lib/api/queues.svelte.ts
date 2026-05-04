@@ -1,5 +1,5 @@
 import { browser } from "$app/environment"
-import type { Queue } from "./client"
+import { baseUrl, type Queue } from "./client"
 
 export interface QueuesSubscription {
   readonly queues: Queue[]
@@ -52,7 +52,7 @@ export function createQueuesSubscription(opts: Options = {}): QueuesSubscription
   let es: EventSource | null = null
 
   function open() {
-    const url = new URL("/api/v1/queues/events", window.location.origin)
+    const url = new URL(`${baseUrl}/api/v1/queues/events`)
     url.searchParams.set("interval", String(pollMs))
     const next = new EventSource(url)
     es = next

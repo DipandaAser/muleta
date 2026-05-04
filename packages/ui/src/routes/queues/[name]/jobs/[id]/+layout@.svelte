@@ -5,6 +5,7 @@
 	import LifecycleTimeline from "$lib/components/LifecycleTimeline.svelte"
 	import StateBadge from "$lib/components/StateBadge.svelte"
 	import { age, byteSize, duration, summarizeBackoff, summarizeRemoveOn } from "$lib/jobs/format"
+	import { paths } from "$lib/paths"
 	import {
 		Check,
 		Clipboard,
@@ -23,6 +24,7 @@
 	} from "@lucide/svelte"
 	import type { Snippet } from "svelte"
 	import type { LayoutData } from "./$types"
+	import { resolve } from "$app/paths"
 
 	interface Props {
 		data: LayoutData
@@ -54,11 +56,11 @@
 	]
 
 	function hrefFor(tab: TabId): string {
-		return `/queues/${name}/jobs/${id}/${tab}`
+		return resolve(`/queues/${name}/jobs/${id}/${tab}`)
 	}
 
 	function isTabActive(tab: TabId): boolean {
-		return page.url.pathname.startsWith(`/queues/${name}/jobs/${id}/${tab}`)
+		return page.url.pathname.startsWith(hrefFor(tab))
 	}
 
 	let actionBusy = $state<"retry" | "remove" | "promote" | "duplicate" | null>(null)
@@ -112,7 +114,7 @@
 		const ok = await runAction("remove", () =>
 			api.api.v1.queues[":name"].jobs[":id"].$delete({ param: { name, id } }),
 		)
-		if (ok) await goto(`/queues/${name}/jobs`)
+		if (ok) await goto(paths.queueJobs(name))
 	}
 
 	/**
@@ -176,7 +178,7 @@
 				return
 			}
 			const body = await res.json()
-			await goto(`/queues/${name}/jobs/${body.id}/data`)
+			await goto(paths.jobData(name, body.id))
 		} catch (e) {
 			actionError = e instanceof Error ? e.message : "duplicate failed"
 		} finally {
@@ -318,7 +320,7 @@
 							</li>
 							<li>
 								<a
-									href="/queues/{name}/add-job?from={id}"
+									href={paths.addJob(name, { fromJobId: id })}
 									onclick={() => duplicateMenu?.removeAttribute("open")}
 									aria-label="Duplicate with overrides"
 									class="gap-2"
@@ -502,7 +504,7 @@
 								<Rows4 size={12} /> Queue
 							</dt>
 							<dd class="font-mono-muleta">
-								<a href="/queues/{name}/jobs" class="hover:underline">{name}</a>
+								<a href={paths.queueJobs(name)} class="hover:underline">{name}</a>
 							</dd>
 						</div>
 					</dl>

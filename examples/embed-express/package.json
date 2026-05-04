@@ -1,0 +1,21 @@
+{
+  "name": "@muleta-dev/example-embed-express",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal Express app embedding the muleta dashboard.",
+  "type": "module",
+  "scripts": {
+    "prestart": "pnpm --filter @muleta-dev/server build",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@muleta-dev/core": "workspace:*",
+    "@muleta-dev/server": "workspace:*",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

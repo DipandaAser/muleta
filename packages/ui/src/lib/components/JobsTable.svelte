@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation"
 	import type { Job } from "$lib/api/client"
+	import { paths } from "$lib/paths"
 	import { MoreHorizontal } from "@lucide/svelte"
 	import StateBadge from "./StateBadge.svelte"
 
@@ -14,7 +15,7 @@
 	let { jobs, loading, queueName }: Props = $props()
 
 	function hrefFor(id: string): string {
-		return `/queues/${queueName}/jobs/${id}`
+		return paths.job(queueName, id)
 	}
 
 	function onRowClick(e: MouseEvent, id: string): void {

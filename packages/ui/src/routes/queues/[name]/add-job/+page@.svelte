@@ -15,6 +15,7 @@
 	import RemoveOnPolicyField from "$lib/jobs/add-job/RemoveOnPolicyField.svelte"
 	import RepeatScheduleField from "$lib/jobs/add-job/RepeatScheduleField.svelte"
 	import JobNamePicker from "$lib/jobs/JobNamePicker.svelte"
+	import { paths } from "$lib/paths"
 	import { Check, Plus } from "@lucide/svelte"
 
 	type DelayUnit = "ms" | "s" | "m"
@@ -333,7 +334,7 @@
 			}
 			const job = await res.json()
 			submitted = true
-			setTimeout(() => goto(`/queues/${queueName}/jobs/${job.id}`), 600)
+			setTimeout(() => goto(paths.job(queueName, job.id)), 600)
 		} catch (e) {
 			serverError = e instanceof Error ? e.message : "submit failed"
 		} finally {
@@ -342,7 +343,7 @@
 	}
 
 	function cancel() {
-		goto(`/queues/${queueName}`)
+		goto(paths.queue(queueName))
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -377,7 +378,7 @@
 					<span>
 						Pre-filled from job
 						<a
-							href="/queues/{queueName}/jobs/{data.sourceJob.id}/data"
+							href={paths.jobData(queueName, data.sourceJob.id)}
 							class="font-mono-muleta hover:underline">{data.sourceJob.name} #{data.sourceJob.id}</a
 						>. Tweak any field, then enqueue.
 					</span>

@@ -2,9 +2,11 @@
 	import { invalidateAll } from "$app/navigation"
 	import { page } from "$app/state"
 	import { api } from "$lib/api/client"
+	import { paths } from "$lib/paths"
 	import { Pause, Play, Plus, RefreshCw, Rows4, TriangleAlert } from "@lucide/svelte"
 	import type { Snippet } from "svelte"
 	import type { LayoutData } from "./$types"
+	import { resolve } from "$app/paths"
 
 	interface Props {
 		data: LayoutData
@@ -66,12 +68,25 @@
 	]
 
 	function hrefFor(tabId: string): string {
-		return `/queues/${name}/${tabId}`
+		switch (tabId) {
+			case "overview":
+				return paths.queue(name)
+			case "jobs":
+				return paths.queueJobs(name)
+			case "schedulers":
+				return paths.queueSchedulers(name)
+			case "workers":
+				return paths.queueWorkers(name)
+			case "flows":
+				return paths.queueFlows(name)
+			default:
+				return "#"
+		}
 	}
 
 	function isActive(tabId: string): boolean {
 		const path = page.url.pathname
-		return path.startsWith(`/queues/${name}/${tabId}`)
+		return path.startsWith(resolve(`/queues/${name}/${tabId}`))
 	}
 
 	function formatTotal(n: number): string {
@@ -155,7 +170,7 @@
 				</div>
 			</div>
 			<div class="ml-auto flex items-center gap-2">
-				<a href="/queues/{name}/add-job" class="btn btn-sm btn-ghost">
+				<a href={paths.addJob(name)} class="btn btn-sm btn-ghost">
 					<Plus size={13} /> Add job
 				</a>
 				<button

@@ -1,6 +1,6 @@
 import { getContext, setContext } from "svelte"
 import { browser } from "$app/environment"
-import type { HealthStatus } from "./client"
+import { baseUrl, type HealthStatus } from "./client"
 
 export interface HealthSubscription {
   readonly status: HealthStatus | null
@@ -54,7 +54,7 @@ export function createHealthSubscription(opts: Options = {}): HealthSubscription
   let es: EventSource | null = null
 
   function open() {
-    const url = new URL("/api/v1/health/events", window.location.origin)
+    const url = new URL(`${baseUrl}/api/v1/health/events`)
     url.searchParams.set("interval", String(pollMs))
     const next = new EventSource(url)
     es = next

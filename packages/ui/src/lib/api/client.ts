@@ -17,9 +17,11 @@ declare global {
 /**
  * Base URL for the muleta API. Reads `window.__MULETA_BASE__` first
  * (set by the embedded handler), falls back to `window.location.origin`
- * for dev (Vite proxy) and the SSR/test default.
+ * for dev (Vite proxy) and the SSR/test default. Exported so non-Hono
+ * consumers (EventSource, manual `fetch`) can prefix their paths the
+ * same way the typed client does.
  */
-const baseUrl =
+export const baseUrl =
   typeof window !== "undefined"
     ? window.location.origin + (window.__MULETA_BASE__ ?? "")
     : "http://localhost:3737"
