@@ -8,42 +8,54 @@ Embed the [muleta](https://muleta.dev) dashboard in your Node app. Hono-based HT
 npm install @muleta-dev/server hono zod bullmq ioredis
 ```
 
-`hono` and `zod` are peer dependencies; `bullmq` and `ioredis` come via `@muleta-dev/core`.
+`hono` and `zod` are peer dependencies; `bullmq` and `ioredis` come via `@muleta-dev/core`. Node 22+ required.
 
 ## Mount it
 
 ### Hono (canonical)
 
 ```ts
-import { Hono } from "hono"
 import { serve } from "@hono/node-server"
 import { createMuleta } from "@muleta-dev/core"
 import { createEndpoints, createHandler } from "@muleta-dev/server"
+import { Hono } from "hono"
 
 const muleta = await createMuleta({ redis: { url: process.env.REDIS_URL! } })
 
 const dashboard = createHandler({
   endpoints: createEndpoints(muleta),
-  assets: "bundled", // serves the SPA from the package's dist/ui/
+  assets: "bundled",
+  basePath: "/admin/queues",
 })
 
 const app = new Hono()
-app.route("/admin/queues", dashboard) // mount anywhere
+app.route("/admin/queues", dashboard)
 serve({ fetch: app.fetch, port: 3000 })
 ```
 
-The SPA's API client auto-detects the mount path at runtime, so the same bundle works at `/admin/queues`, on a dedicated subdomain, or anywhere else without a per-mount rebuild.
+`basePath` matches the URL prefix you mount at — required when mounting under any sub-path. Same bundle works at `/admin/queues`, on a dedicated subdomain, or anywhere else without a per-mount rebuild.
 
-> Express, NestJS, AdonisJS, and plain Node `http` adapters land in a follow-up release — for v0.1, mount via Hono or run the [Docker image](https://github.com/DipandaAser/muleta/pkgs/container/muleta).
+### Other frameworks
+
+Adapters ship as subpath imports:
+
+| Framework | Adapter | Example |
+| --- | --- | --- |
+| Express | `@muleta-dev/server/express` (`honoToExpress`) | [`examples/embed-express`](https://github.com/DipandaAser/muleta/tree/main/examples/embed-express) |
+| AdonisJS / NestJS / `node:http` / h3 | `@muleta-dev/server/node` (`honoToNode`) | [`examples/embed-node-http`](https://github.com/DipandaAser/muleta/tree/main/examples/embed-node-http) |
+
+Full embed guide with framework-by-framework snippets: <https://github.com/DipandaAser/muleta/blob/main/docs/embed.md>.
 
 ## Auth
 
-**muleta has no built-in authentication.** Wrap the mount with your own admin auth middleware:
+**muleta has no built-in authentication.** The dashboard exposes destructive actions (retry, remove, pause). Wrap the mount with your own admin auth middleware before deploying:
 
 ```ts
-app.use("/admin/*", yourAuthMiddleware)
+app.use("/admin/queues/*", yourAuthMiddleware)
 app.route("/admin/queues", dashboard)
 ```
+
+Patterns for Hono / Express / Adonis: <https://github.com/DipandaAser/muleta/blob/main/docs/auth.md>.
 
 ## Status
 
