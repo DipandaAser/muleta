@@ -4,6 +4,8 @@ Core library for [muleta](https://muleta.dev) — the operator dashboard for [Bu
 
 Most users want [`@muleta-dev/server`](https://www.npmjs.com/package/@muleta-dev/server) instead — that ships the dashboard ready to mount in your app. Reach for `@muleta-dev/core` when you need raw programmatic access to the same internals (e.g. building custom tooling on top of muleta's queue model).
 
+Embed guide: <https://github.com/DipandaAser/muleta/blob/main/docs/embed.md>.
+
 ## Install
 
 ```bash
