@@ -1,3 +1,4 @@
+import type { FlowJobNode, FlowSummary, GetFlowTreeOptions } from "./flows/types.js"
 import type {
   AddJobOptions,
   GetJobsOptions,
@@ -101,4 +102,21 @@ export interface QueueRegistry {
    * isn't registered.
    */
   removeJobScheduler(name: string, schedulerId: string): Promise<boolean>
+  /**
+   * List flow roots living on the given queue, newest-first. A "flow
+   * root" is a parent job (no `parentKey`) with at least one child via
+   * `getDependenciesCount`. Bounded scan — only the most recent ~100
+   * jobs per queue are inspected.
+   */
+  getFlows(name: string): Promise<FlowSummary[]>
+  /**
+   * Walk the flow tree rooted at `(queueName, rootId)` and return a
+   * JSON-friendly recursive structure. Returns `null` if the root
+   * doesn't exist. Throws if the queue isn't registered.
+   */
+  getFlowTree(
+    queueName: string,
+    rootId: string,
+    opts?: GetFlowTreeOptions,
+  ): Promise<FlowJobNode | null>
 }

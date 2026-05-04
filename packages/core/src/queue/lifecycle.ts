@@ -84,7 +84,13 @@ export function createLifecycleOps(state: RegistryState): Pick<
     },
 
     async close() {
-      await Promise.all([...state.queues.values()].map((q) => q.close()))
+      // Close every queue and the (lazy) FlowProducer in parallel; both
+      // own their own ioredis connection internally and don't depend on
+      // each other's lifecycle.
+      await Promise.all([
+        ...[...state.queues.values()].map((q) => q.close()),
+        state.closeFlowProducer(),
+      ])
       state.queues.clear()
       state.configs.clear()
       state.sources.clear()

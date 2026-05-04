@@ -1,6 +1,6 @@
 import type { z } from "@hono/zod-openapi"
 import { createMuleta, type Muleta } from "@muleta-dev/core"
-import { Queue, Worker } from "bullmq"
+import { FlowProducer, Queue, Worker } from "bullmq"
 import { hc } from "hono/client"
 import { Redis } from "ioredis"
 import { GenericContainer, type StartedTestContainer } from "testcontainers"
@@ -540,6 +540,85 @@ describe("createHandler", () => {
       const res = await handler.request("/api/v1/queues/nope/schedulers/x", {
         method: "DELETE",
       })
+      expect(res.status).toBe(404)
+    })
+  })
+
+  describe("GET /api/v1/queues/:name/flows and /:id", () => {
+    it("returns an empty list when no flows exist on the queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/flows")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { flows: unknown[] }
+      expect(body.flows).toEqual([])
+    })
+
+    it("lists a flow root + walks the tree from /:id", async () => {
+      muleta.queues.register({ name: "rendering" })
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        const tree = await fp.add({
+          name: "send-digest",
+          queueName: "emails",
+          data: { batchId: "b1" },
+          children: [
+            {
+              name: "render-pdf",
+              queueName: "rendering",
+              data: { i: 0 },
+              children: [{ name: "compress", queueName: "rendering", data: { i: 0 } }],
+            },
+          ],
+        })
+        const rootId = String(tree.job.id)
+
+        const handler = createHandler({ endpoints: createEndpoints(muleta) })
+
+        const listRes = await handler.request("/api/v1/queues/emails/flows")
+        expect(listRes.status).toBe(200)
+        const listBody = (await listRes.json()) as {
+          flows: Array<{ id: string; queue: string; name: string; childrenCount: number }>
+        }
+        expect(listBody.flows).toHaveLength(1)
+        expect(listBody.flows[0]).toMatchObject({
+          id: rootId,
+          queue: "emails",
+          name: "send-digest",
+          childrenCount: 1,
+        })
+
+        const treeRes = await handler.request(`/api/v1/queues/emails/flows/${rootId}`)
+        expect(treeRes.status).toBe(200)
+        const treeBody = (await treeRes.json()) as {
+          id: string
+          parentId: string | null
+          children: Array<{ id: string; queue: string; name: string; parentId: string | null }>
+        }
+        expect(treeBody.id).toBe(rootId)
+        expect(treeBody.parentId).toBeNull()
+        expect(treeBody.children).toHaveLength(1)
+        expect(treeBody.children[0]).toMatchObject({
+          queue: "rendering",
+          name: "render-pdf",
+          parentId: rootId,
+        })
+      } finally {
+        await fp.close()
+        const renderingQueue = new Queue("rendering", { connection: producerConnection })
+        await renderingQueue.obliterate({ force: true }).catch(() => {})
+        await renderingQueue.close()
+      }
+    })
+
+    it("GET /:id returns 404 for unknown root", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/emails/flows/does-not-exist")
+      expect(res.status).toBe(404)
+    })
+
+    it("GET /:id returns 404 for an unregistered queue", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/queues/nope/flows/1")
       expect(res.status).toBe(404)
     })
   })

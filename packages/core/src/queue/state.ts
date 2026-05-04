@@ -1,4 +1,4 @@
-import { Queue } from "bullmq"
+import { FlowProducer, Queue } from "bullmq"
 import type { Redis } from "ioredis"
 import { createJobNameIndex } from "./jobNameIndex.js"
 import type { QueueConfig } from "./types.js"
@@ -25,6 +25,15 @@ export interface RegistryState {
   closeQueue(name: string): Promise<void>
   /** Replace or insert a config under `name` and tag it with its source. */
   registerInternal(config: QueueConfig, source: Source): void
+  /**
+   * Lazily build (and cache) a single `FlowProducer` shared by every
+   * flow operation. Reads-only in our case (`getFlow`); the same
+   * instance walks any registered queue's flow tree, so we don't keep
+   * one per queue.
+   */
+  getFlowProducer(): FlowProducer
+  /** Close the cached FlowProducer if one was created. No-op otherwise. */
+  closeFlowProducer(): Promise<void>
 }
 
 export function createRegistryState(redis: Redis): RegistryState {
@@ -32,6 +41,7 @@ export function createRegistryState(redis: Redis): RegistryState {
   const sources = new Map<string, Source>()
   const queues = new Map<string, Queue>()
   const jobNames = createJobNameIndex()
+  let flowProducer: FlowProducer | null = null
 
   const state: RegistryState = {
     redis,
@@ -62,6 +72,19 @@ export function createRegistryState(redis: Redis): RegistryState {
     registerInternal(config, source) {
       configs.set(config.name, { ...config })
       sources.set(config.name, source)
+    },
+    getFlowProducer() {
+      if (!flowProducer) {
+        flowProducer = new FlowProducer({ connection: redis })
+      }
+      return flowProducer
+    },
+    async closeFlowProducer() {
+      if (flowProducer) {
+        const fp = flowProducer
+        flowProducer = null
+        await fp.close()
+      }
     },
   }
   return state

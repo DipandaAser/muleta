@@ -11,6 +11,11 @@ export type {
   JobState,
   KeepJobs,
 } from "./queue/jobs/types.js"
+export type {
+  FlowJobNode,
+  FlowSummary,
+  GetFlowTreeOptions,
+} from "./queue/flows/types.js"
 export type { JobSchedulerInfo } from "./queue/schedulers/types.js"
 export type { QueueConfig, QueueCounts, QueueInfo, QueueRegistry } from "./queue/types.js"
 export type { WorkerInfo } from "./queue/workers/types.js"

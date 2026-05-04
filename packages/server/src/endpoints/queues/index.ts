@@ -5,6 +5,8 @@ import { listQueues } from "./handlers/listQueues.js"
 import { pauseQueue } from "./handlers/pauseQueue.js"
 import { queuesEvents } from "./handlers/queuesEvents.js"
 import { resumeQueue } from "./handlers/resumeQueue.js"
+import { getFlow } from "./flows/handlers/getFlow.js"
+import { listFlows } from "./flows/handlers/listFlows.js"
 import { addJob } from "./jobs/handlers/addJob.js"
 import { getJob } from "./jobs/handlers/getJob.js"
 import { listJob } from "./jobs/handlers/listJob.js"
@@ -34,4 +36,6 @@ export function createQueuesApp(muleta: Muleta) {
     .openapi(removeScheduler.route, removeScheduler.handler(muleta))
     .openapi(pauseQueue.route, pauseQueue.handler(muleta))
     .openapi(resumeQueue.route, resumeQueue.handler(muleta))
+    .openapi(listFlows.route, listFlows.handler(muleta))
+    .openapi(getFlow.route, getFlow.handler(muleta))
 }
