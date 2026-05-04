@@ -56,14 +56,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # changesets pushes per-package git tags (e.g. `@muleta-dev/server@0.1.0`),
-      # but the Docker workflow's `tags: ["v*"]` filter expects a single
-      # `vX.Y.Z` tag to derive `:0.1.0` / `:0.1` / `:0` / `:latest` image
-      # tags from. Bridge the gap: after a successful publish, push a
-      # single `v<server-version>` tag derived from `@muleta-dev/server`'s
-      # version (the user-facing release, what muleta the binary actually
-      # ships). The Docker workflow picks it up via its `push: tags`
-      # trigger and produces the semver-tagged images.
+      # changesets only emits per-package tags (e.g. `@muleta-dev/server@0.1.0`),
+      # which the Docker workflow's `v*` trigger ignores. Push a matching
+      # `v<server-version>` tag so the Docker workflow rebuilds with semver
+      # image tags. Server's version is the source — it's what the image
+      # bundles, and it stays in lockstep with core via the `linked` config.
       - if: steps.changesets.outputs.published == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
