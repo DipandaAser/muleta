@@ -29,7 +29,7 @@
 		>
 			{n.queue}
 		</span>
-		<StateBadge state={n.state} />
+		<StateBadge state={n.state} size="sm" />
 	</div>
 
 	<div class="flex flex-col gap-px">
