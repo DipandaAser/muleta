@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# Single concurrent release — never race two version PRs or two npm publishes.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # commit version bumps + tags
+  pull-requests: write # open / update the "Version Packages" PR
+  id-token: write # OIDC token for npm Trusted Publishing + sigstore provenance
+
+jobs:
+  release:
+    name: changesets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # changesets needs full history to read tags + diff against base.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build everything before publish — turbo respects workspace deps so
+      # the UI bundle exists before @muleta-dev/server's bundle-ui step
+      # tries to copy it. No-op when there are pending changesets (the
+      # action only opens the version PR in that case).
+      - run: pnpm build
+
+      # npm Trusted Publishing requires a recent npm CLI. Node 24 ships
+      # with an older one — bump it to the version that auto-detects the
+      # GitHub OIDC token and exchanges it for a publish credential.
+      - run: npm install --global npm@latest
+
+      - id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          publish: pnpm release
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

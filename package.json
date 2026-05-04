@@ -15,10 +15,15 @@
     "typecheck": "turbo run typecheck",
     "lint": "biome check . && prettier --check \"**/*.svelte\"",
     "format": "biome format --write . && prettier --write \"**/*.svelte\"",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
+    "@changesets/changelog-github": "0.6.0",
+    "@changesets/cli": "2.31.0",
     "@types/node": "^25.6.0",
     "prettier": "^3.8.3",
     "prettier-plugin-svelte": "^3.5.1",
