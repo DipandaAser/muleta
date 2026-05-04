@@ -1,13 +1,16 @@
 # Public demo stack for muleta — Redis + the dashboard image + a job
-# producer/worker process + Caddy fronting demo.muleta.dev for SSL.
+# producer/worker process. SSL termination and ingress are intentionally
+# left to the host platform (Dokploy / Coolify / Railway / Fly / k8s
+# with cert-manager / a separate Caddy or nginx on a VPS) so this
+# compose is portable to anywhere that speaks docker-compose.
 #
 # Bring up locally:
 #
 #   cd apps/demo && docker compose up --build
 #
-# On the deploy host (any VPS with Docker), give the box a public IP,
-# point demo.muleta.dev's A/AAAA records at it, then `docker compose up
-# -d --build`. Caddy will obtain certs automatically on first request.
+# The muleta container binds 3737 — point your platform's domain at
+# that port. On a raw VPS, run a reverse proxy (Caddy / nginx /
+# Traefik) in front to get SSL.
 #
 # Redis runs without persistence so a container restart wipes state —
 # bounded demo, no growing data files. The producer keeps the dashboard
@@ -32,6 +35,8 @@ services:
         condition: service_healthy
     environment:
       MULETA_REDIS_URL: redis://redis:6379
+    ports:
+      - "3737:3737"
     restart: unless-stopped
 
   demo:
@@ -46,20 +51,3 @@ services:
       DEMO_PRODUCE_INTERVAL_MS: "600"
       DEMO_FLOW_INTERVAL_MS: "120000"
     restart: unless-stopped
-
-  caddy:
-    image: caddy:2-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - muleta
-    restart: unless-stopped
-
-volumes:
-  caddy_data:
-  caddy_config:

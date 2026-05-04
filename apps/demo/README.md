@@ -22,11 +22,9 @@ docker compose up --build
 Then:
 
 - Dashboard: <http://localhost:3737> (the muleta service binds to 3737)
-- Redis: localhost:6379 (volumeless — Ctrl-C wipes state)
+- Redis: 6379 inside the compose network (not exposed to the host)
 
-The Caddy service in the compose file expects to bind 80/443 on the host — comment it out for local development if those ports are in use, and hit muleta directly on 3737.
-
-To run just the producer/worker against an existing Redis:
+To run just the producer/worker against an existing Redis (no compose):
 
 ```bash
 REDIS_URL=redis://localhost:6379 pnpm dev
@@ -34,20 +32,14 @@ REDIS_URL=redis://localhost:6379 pnpm dev
 
 ## Deploy
 
-The compose stack is portable to any Docker host. The minimal flow:
+The compose stack is platform-agnostic — no SSL or ingress baked in. Drop it into whatever PaaS or orchestrator handles those for you:
 
-1. Provision a small VPS (1 CPU, 1 GB RAM is plenty) with Docker installed.
-2. Open ports `80` and `443` to the world.
-3. Point the `demo.muleta.dev` A/AAAA records at the VPS public IP.
-4. Clone this repo on the host, `cd apps/demo`, then:
+- **Dokploy / Coolify / CapRover** — point a project at this `compose.yaml`, set the domain on the `muleta` service mapped to port `3737`. The platform's Traefik handles cert issuance and HTTPS.
+- **Railway / Render / Fly.io** — import the compose, expose the `muleta` service publicly. Each platform's HTTPS layer fronts it.
+- **Kubernetes** — translate to manifests (Kompose works), run a `cert-manager` + Ingress in front of the `muleta` Service.
+- **Bare VPS** — drop a separate Caddy/nginx/Traefik on the host and proxy `demo.muleta.dev` to `localhost:3737`. Open 80/443 on the firewall, point DNS at the VPS, done.
 
-```bash
-docker compose up -d --build
-```
-
-5. First visit triggers Caddy to obtain a Let's Encrypt cert automatically. After that, traffic flows demo.muleta.dev → Caddy → muleta container → SPA + API.
-
-To redeploy after a code change, `git pull` on the host and `docker compose up -d --build` re-runs the build for the `demo` service. The muleta container pulls `ghcr.io/muleta-dev/muleta:latest`, so a fresh `docker compose pull` brings in dashboard updates.
+To redeploy after a code change: have the platform pull from this repo and rebuild the `demo` service. The `muleta` container pulls `ghcr.io/muleta-dev/muleta:latest`, so re-pulling brings in dashboard updates without a code change here.
 
 ## Environment
 
