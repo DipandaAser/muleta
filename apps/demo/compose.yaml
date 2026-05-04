@@ -1,0 +1,53 @@
+# Public demo stack for muleta — Redis + the dashboard image + a job
+# producer/worker process. SSL termination and ingress are intentionally
+# left to the host platform (Dokploy / Coolify / Railway / Fly / k8s
+# with cert-manager / a separate Caddy or nginx on a VPS) so this
+# compose is portable to anywhere that speaks docker-compose.
+#
+# Bring up locally:
+#
+#   cd apps/demo && docker compose up --build
+#
+# The muleta container binds 3737 — point your platform's domain at
+# that port. On a raw VPS, run a reverse proxy (Caddy / nginx /
+# Traefik) in front to get SSL.
+#
+# Redis runs without persistence so a container restart wipes state —
+# bounded demo, no growing data files. The producer keeps the dashboard
+# busy after every restart.
+
+services:
+  redis:
+    image: redis:7-alpine
+    # No volume = no persistence = clean slate every restart.
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  muleta:
+    image: ghcr.io/muleta-dev/muleta:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      MULETA_REDIS_URL: redis://redis:6379
+    ports:
+      - "3737:3737"
+    restart: unless-stopped
+
+  demo:
+    build:
+      context: ../..
+      dockerfile: apps/demo/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      DEMO_PRODUCE_INTERVAL_MS: "600"
+      DEMO_FLOW_INTERVAL_MS: "120000"
+    restart: unless-stopped
