@@ -1,38 +1,14 @@
 # syntax=docker/dockerfile:1.7
 
-# ============================================================
-# Stage 1 — installer
-#   pnpm-deploys the demo app into a self-contained directory so
-#   the runtime image doesn't ship the full monorepo or dev deps.
-# ============================================================
-FROM node:24-slim AS installer
+# Self-contained Dockerfile. Build context is `apps/demo/` itself —
+# nothing outside this directory is needed, so the image builds
+# correctly under platforms that pin context to the Dockerfile's
+# directory (Dokploy, etc.) and from a manual `docker build .` here.
+#
+# The demo has zero workspace deps — only `faker`, `bullmq`, `ioredis`
+# from the public registry — so we install with plain npm and skip the
+# monorepo / pnpm machinery the rest of the repo uses.
 
-RUN corepack enable
-
-WORKDIR /app
-
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
-COPY apps/demo/package.json ./apps/demo/
-
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --filter @muleta-dev/demo...
-
-COPY apps/demo/ ./apps/demo/
-
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm --filter @muleta-dev/demo deploy --prod --legacy /deploy
-
-# tsx isn't in the prod deps (it's devDependency), but the runtime
-# uses it to run TypeScript directly without a compile step. Install
-# it into the deploy directory.
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    cd /deploy && pnpm add tsx@4.21.0
-
-# ============================================================
-# Stage 2 — runtime
-#   Runs the seeder + workers under tsx. No SPA, no muleta server —
-#   the dashboard runs in a separate container.
-# ============================================================
 FROM node:24-slim AS runtime
 
 RUN groupadd --system --gid 1001 demo \
@@ -40,12 +16,23 @@ RUN groupadd --system --gid 1001 demo \
 
 WORKDIR /app
 
-COPY --from=installer --chown=demo:demo /deploy/node_modules ./node_modules
-COPY --from=installer --chown=demo:demo /app/apps/demo/src ./src
-COPY --from=installer --chown=demo:demo /app/apps/demo/package.json ./package.json
+# Install deps first so this layer caches when only src/ changes.
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund \
+ && npm install --no-audit --no-fund tsx@4.21.0 typescript@^6.0.3 \
+ && npm cache clean --force
 
+# Source last so it doesn't bust the install cache on every code change.
+COPY src ./src
+
+RUN chown -R demo:demo /app
 USER demo
 
 ENV NODE_ENV=production
 
+# tsx runs the entry point directly — no compile step. The demo isn't
+# perf-sensitive and tsx has parity with `node` for our usage. tsconfig
+# is intentionally not copied: tsx falls back to sensible defaults and
+# the workspace tsconfig.base.json isn't reachable from this context
+# anyway.
 CMD ["node_modules/.bin/tsx", "src/index.ts"]
