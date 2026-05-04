@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { serveStatic } from "@hono/node-server/serve-static"
@@ -36,13 +36,35 @@ export interface CreateHandlerOptions {
 
 /**
  * Resolve the path to the SPA bundle that ships inside this package's
- * tarball. After `pnpm build`, `scripts/bundle-ui.mjs` copies the
- * SvelteKit static output into `dist/ui/`. From a consumer's perspective
- * (after `npm install @muleta-dev/server`) the file lives at
- * `node_modules/@muleta-dev/server/dist/ui/`.
+ * tarball. We walk up from this module's location to find the
+ * package's `package.json`, then look for `dist/ui/` next to it. That
+ * way the same code works whether the module is loaded from compiled
+ * `dist/handler.js` (post-build / post-install) OR from the original
+ * `src/handler.ts` (dev via tsx in the monorepo) — both find the same
+ * `<package-root>/dist/ui` location.
+ *
+ * Throws a clear error if `dist/ui/` is missing — usually means
+ * `pnpm --filter @muleta-dev/server build` hasn't run yet, or in the
+ * unlikely case of a published-tarball packaging bug.
  */
 function bundledUiPath(): string {
-  return resolve(dirname(fileURLToPath(import.meta.url)), "ui")
+  let dir = dirname(fileURLToPath(import.meta.url))
+  while (!existsSync(resolve(dir, "package.json"))) {
+    const parent = dirname(dir)
+    if (parent === dir) {
+      throw new Error("[muleta] could not locate package root from handler module")
+    }
+    dir = parent
+  }
+  const uiDir = resolve(dir, "dist", "ui")
+  if (!existsSync(uiDir)) {
+    throw new Error(
+      `[muleta] SPA bundle missing at ${uiDir}. ` +
+        `If you're developing in the muleta repo, run \`pnpm --filter @muleta-dev/server build\` first. ` +
+        `If you installed @muleta-dev/server from npm, this is a packaging bug — please file an issue.`,
+    )
+  }
+  return uiDir
 }
 
 /**

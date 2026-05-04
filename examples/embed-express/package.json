@@ -5,6 +5,7 @@
   "description": "Minimal Express app embedding the muleta dashboard.",
   "type": "module",
   "scripts": {
+    "prestart": "pnpm --filter @muleta-dev/server build",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

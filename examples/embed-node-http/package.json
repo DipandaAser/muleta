@@ -5,6 +5,7 @@
   "description": "Minimal raw `node:http` server embedding the muleta dashboard. Same pattern works for AdonisJS / h3.",
   "type": "module",
   "scripts": {
+    "prestart": "pnpm --filter @muleta-dev/server build",
     "start": "tsx src/index.ts"
   },
   "dependencies": {
