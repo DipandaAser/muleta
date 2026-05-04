@@ -62,6 +62,13 @@ export interface FlowOps {
    */
   getFlows(name: string): Promise<FlowSummary[]>
   /**
+   * Aggregate flow roots across every registered queue, sorted
+   * newest-first by `addedAt`. Errors on a single queue are logged and
+   * skipped — they don't abort the rest. Mirrors `getAllJobSchedulers`
+   * for the global Flows sidebar screen.
+   */
+  getAllFlows(): Promise<FlowSummary[]>
+  /**
    * Walk the flow tree rooted at `(queueName, rootId)` and serialize
    * it into a JSON-friendly recursive structure. Throws if the queue
    * isn't registered. Returns `null` if the root doesn't exist.
@@ -102,6 +109,50 @@ export function createFlowOps(state: RegistryState): FlowOps {
         } satisfies FlowSummary
       })
       return summaries.filter((s): s is FlowSummary => s !== null)
+    },
+
+    async getAllFlows() {
+      const out: FlowSummary[] = []
+      for (const name of state.configs.keys()) {
+        try {
+          const { queue } = state.getOrCreate(name)
+          const jobs = await queue.getJobs(
+            FLOW_ROOT_SCAN_STATES,
+            0,
+            FLOW_ROOT_SCAN_LIMIT - 1,
+            false,
+          )
+          const roots = jobs.filter((j): j is Job => Boolean(j) && !j.parentKey)
+          const summaries = await mapWithConcurrency(
+            roots,
+            FLOW_SUMMARY_CONCURRENCY,
+            async (job) => {
+              const [stateRaw, deps] = await Promise.all([
+                job.getState() as Promise<JobState>,
+                job.getDependenciesCount(),
+              ])
+              const childrenCount = (deps.processed ?? 0) + (deps.unprocessed ?? 0)
+              if (childrenCount === 0) return null
+              return {
+                id: String(job.id),
+                queue: name,
+                name: job.name,
+                state: stateRaw,
+                addedAt: job.timestamp,
+                childrenCount,
+              } satisfies FlowSummary
+            },
+          )
+          for (const s of summaries) if (s) out.push(s)
+        } catch (err) {
+          // One bad queue shouldn't poison the cross-queue view.
+          console.error(`[muleta] getAllFlows failed for "${name}":`, err)
+        }
+      }
+      // Newest-first across queues so recently-fired flows float to the
+      // top of the global rail regardless of which queue they live on.
+      out.sort((a, b) => b.addedAt - a.addedAt)
+      return out
     },
 
     async getFlowTree(queueName, rootId, opts) {

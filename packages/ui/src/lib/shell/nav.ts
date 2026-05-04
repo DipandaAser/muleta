@@ -22,7 +22,7 @@ export const NAV: NavSection[] = [
     title: "Dashboard",
     items: [
       { id: "queues", label: "Queues", icon: Rows4, href: "/queues" },
-      { id: "flows", label: "Flows", icon: GitFork, iconClass: "rotate-180" },
+      { id: "flows", label: "Flows", icon: GitFork, iconClass: "rotate-180", href: "/flows" },
       { id: "workers", label: "Workers", icon: Server, href: "/workers" },
       { id: "schedulers", label: "Schedulers", icon: Clock, href: "/schedulers" },
       { id: "metrics", label: "Metrics", icon: ChartBar },

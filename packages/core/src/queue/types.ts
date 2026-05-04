@@ -110,6 +110,12 @@ export interface QueueRegistry {
    */
   getFlows(name: string): Promise<FlowSummary[]>
   /**
+   * Aggregate flow roots across every registered queue, sorted
+   * globally newest-first. Errors on a single queue are logged and
+   * skipped — they don't abort the rest.
+   */
+  getAllFlows(): Promise<FlowSummary[]>
+  /**
    * Walk the flow tree rooted at `(queueName, rootId)` and return a
    * JSON-friendly recursive structure. Returns `null` if the root
    * doesn't exist. Throws if the queue isn't registered.
