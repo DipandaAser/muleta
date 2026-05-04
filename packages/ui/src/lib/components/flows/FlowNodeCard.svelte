@@ -21,8 +21,6 @@
 <a
 	href="/queues/{n.queue}/jobs/{n.id}/data"
 	class="flow-node block rounded border border-base-300 bg-base-100 px-3 py-2 text-left no-underline hover:bg-base-200/40 transition-colors min-w-55 max-w-65"
-	target="_blank"
-	rel="noopener"
 	title="Open job #{n.id} in a new tab"
 >
 	<div class="flex items-center justify-between gap-2 mb-1">
