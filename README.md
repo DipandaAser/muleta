@@ -2,6 +2,8 @@
 
 Open-source operator dashboard for [BullMQ](https://docs.bullmq.io). Run it as its own process, or embed it in any Node app under your existing auth.
 
+🟢 **Live demo:** [demo.muleta.dev](https://demo.muleta.dev) — populated with synthetic queues, schedulers, jobs, and flows so you can click through the full UX.
+
 ![muleta — open-source BullMQ dashboard](muleta-cover.png)
 
 > Pre-1.0. The API and config surface may change between `0.x` minor releases. See the [roadmap](#status) below.
