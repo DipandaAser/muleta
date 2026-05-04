@@ -623,6 +623,54 @@ describe("createHandler", () => {
     })
   })
 
+  describe("GET /api/v1/flows", () => {
+    it("returns an empty list when no flows exist anywhere", async () => {
+      const handler = createHandler({ endpoints: createEndpoints(muleta) })
+      const res = await handler.request("/api/v1/flows")
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { flows: unknown[] }
+      expect(body.flows).toEqual([])
+    })
+
+    it("flattens flow roots across queues, newest-first", async () => {
+      muleta.queues.register({ name: "rendering" })
+      const renderingProducer = new Queue("rendering", { connection: producerConnection })
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        const renderingTree = await fp.add({
+          name: "render",
+          queueName: "rendering",
+          data: {},
+          children: [{ name: "compress", queueName: "rendering", data: {} }],
+        })
+        await new Promise((r) => setTimeout(r, 10))
+        const emailsTree = await fp.add({
+          name: "send-digest",
+          queueName: "emails",
+          data: {},
+          children: [{ name: "render-pdf", queueName: "rendering", data: {} }],
+        })
+
+        const handler = createHandler({ endpoints: createEndpoints(muleta) })
+        const res = await handler.request("/api/v1/flows")
+        expect(res.status).toBe(200)
+        const body = (await res.json()) as {
+          flows: Array<{ id: string; queue: string; addedAt: number }>
+        }
+        expect(body.flows).toHaveLength(2)
+        // Newest-first across queues.
+        expect(body.flows[0]?.id).toBe(String(emailsTree.job.id))
+        expect(body.flows[0]?.queue).toBe("emails")
+        expect(body.flows[1]?.id).toBe(String(renderingTree.job.id))
+        expect(body.flows[1]?.queue).toBe("rendering")
+      } finally {
+        await fp.close()
+        await renderingProducer.obliterate({ force: true }).catch(() => {})
+        await renderingProducer.close()
+      }
+    })
+  })
+
   describe("GET /api/v1/schedulers", () => {
     it("returns an empty list when no schedulers exist anywhere", async () => {
       const handler = createHandler({ endpoints: createEndpoints(muleta) })

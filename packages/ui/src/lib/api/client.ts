@@ -46,6 +46,8 @@ export type ListFlowsResponse = InferResponseType<
 >
 export type FlowSummary = ListFlowsResponse["flows"][number]
 
+export type ListAllFlowsResponse = InferResponseType<typeof api.api.v1.flows.$get, 200>
+
 export type FlowJobNode = InferResponseType<
   (typeof api.api.v1.queues)[":name"]["flows"][":id"]["$get"],
   200

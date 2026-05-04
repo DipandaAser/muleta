@@ -5,9 +5,19 @@
 
 	interface Props {
 		state: JobState
+		/** daisyUI badge size — `md` is the default everywhere; nodes
+		 * with constrained widths (flow graph cards) pass `sm`. */
+		size?: "xs" | "sm" | "md"
 	}
 
-	let { state }: Props = $props()
+	let { state, size = "md" }: Props = $props()
+
+	// Statically-named classes so Tailwind/daisyUI's JIT keeps them.
+	const SIZE_CLASS: Record<NonNullable<Props["size"]>, string> = {
+		xs: "badge-xs",
+		sm: "badge-sm",
+		md: "badge-md",
+	}
 
 	/**
 	 * Maps BullMQ states to daisyUI's semantic badge colors (using the `soft`
@@ -38,7 +48,10 @@
 	let Ico = $derived(cfg.icon)
 </script>
 
-<span class="badge badge-md font-mono-muleta gap-1 {cfg.classes}" style={cfg.style}>
+<span
+	class="badge {SIZE_CLASS[size]} whitespace-nowrap font-mono-muleta gap-1 {cfg.classes}"
+	style={cfg.style}
+>
 	<Ico size={10} />
 	{state}
 </span>

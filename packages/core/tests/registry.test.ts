@@ -658,6 +658,43 @@ describe("QueueRegistry", () => {
       await expect(muleta.queues.getFlows("nope")).rejects.toThrow(/not registered/)
       await expect(muleta.queues.getFlowTree("nope", "1")).rejects.toThrow(/not registered/)
     })
+
+    it("getAllFlows aggregates roots across queues, newest-first", async () => {
+      muleta.queues.register({ name: "rendering" })
+      const renderingProducer = new Queue("rendering", { connection: producerConnection })
+      const fp = new FlowProducer({ connection: producerConnection })
+      try {
+        // Add the rendering-queue root first, then the emails one — the
+        // result should be sorted newest-first regardless of queue.
+        const renderingTree = await fp.add({
+          name: "render",
+          queueName: "rendering",
+          data: {},
+          children: [{ name: "compress", queueName: "rendering", data: {} }],
+        })
+        // Tiny delay so timestamps differ even on fast machines.
+        await new Promise((r) => setTimeout(r, 10))
+        const emailsTree = await fp.add({
+          name: "send-digest",
+          queueName: "emails",
+          data: {},
+          children: [{ name: "render-pdf", queueName: "rendering", data: {} }],
+        })
+
+        const all = await muleta.queues.getAllFlows()
+        expect(all).toHaveLength(2)
+        const ids = all.map((f) => f.id)
+        expect(ids[0]).toBe(String(emailsTree.job.id))
+        expect(ids[1]).toBe(String(renderingTree.job.id))
+        // Each entry is tagged with the right queue.
+        expect(all.find((f) => f.id === String(emailsTree.job.id))?.queue).toBe("emails")
+        expect(all.find((f) => f.id === String(renderingTree.job.id))?.queue).toBe("rendering")
+      } finally {
+        await fp.close()
+        await renderingProducer.obliterate({ force: true }).catch(() => {})
+        await renderingProducer.close()
+      }
+    })
   })
 
   describe("removeJobScheduler", () => {
