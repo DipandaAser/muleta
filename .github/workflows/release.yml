@@ -12,7 +12,7 @@ concurrency:
 permissions:
   contents: write # commit version bumps + tags
   pull-requests: write # open / update the "Version Packages" PR
-  id-token: write # npm provenance attestation
+  id-token: write # OIDC token for npm Trusted Publishing + sigstore provenance
 
 jobs:
   release:
@@ -41,6 +41,11 @@ jobs:
       # action only opens the version PR in that case).
       - run: pnpm build
 
+      # npm Trusted Publishing requires a recent npm CLI. Node 24 ships
+      # with an older one — bump it to the version that auto-detects the
+      # GitHub OIDC token and exchanges it for a publish credential.
+      - run: npm install --global npm@latest
+
       - id: changesets
         uses: changesets/action@v1
         with:
@@ -50,5 +55,3 @@ jobs:
           commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
