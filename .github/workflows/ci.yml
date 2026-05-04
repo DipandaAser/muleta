@@ -2,6 +2,11 @@ name: CI
 
 on:
   pull_request:
+  # Also run on push to main so the README's CI badge has a status to
+  # report. Catches the rare case where a force-push or admin-merged
+  # PR slips a regression past pre-merge CI.
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
