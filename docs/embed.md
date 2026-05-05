@@ -7,7 +7,7 @@ If you'd rather run muleta as its own process, see [docs/docker.md](docker.md).
 ## Install
 
 ```bash
-npm install @muleta-dev/server hono zod bullmq ioredis
+npm install @muleta-dev/server @muleta-dev/core hono zod bullmq ioredis
 ```
 
 `hono` and `zod` are peer dependencies. `bullmq` and `ioredis` come via `@muleta-dev/core`. Node 22+ is required.
