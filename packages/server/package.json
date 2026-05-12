@@ -89,7 +89,7 @@
   "devDependencies": {
     "@muleta-dev/ui": "workspace:*",
     "bullmq": "^5.74.1",
-    "hono": "^4.12.14",
+    "hono": "^4.12.18",
     "ioredis": "^5.10.1",
     "testcontainers": "^11.14.0",
     "vitest": "^4.1.4",

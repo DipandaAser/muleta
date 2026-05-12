@@ -12,7 +12,7 @@
     "@hono/node-server": "^1.19.14",
     "@muleta-dev/core": "workspace:*",
     "@muleta-dev/server": "workspace:*",
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "tsx": "^4.21.0",

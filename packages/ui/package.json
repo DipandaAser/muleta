@@ -35,7 +35,7 @@
     "@xyflow/svelte": "^1.5.2",
     "cron-parser": "^5.5.0",
     "cronstrue": "^3.14.0",
-    "hono": "^4.12.14",
+    "hono": "^4.12.18",
     "monaco-editor": "^0.55.1",
     "shiki": "^4.0.2"
   },

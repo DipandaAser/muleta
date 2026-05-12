@@ -1,0 +1,12 @@
+---
+"@muleta-dev/core": minor
+"@muleta-dev/server": minor
+---
+
+Dashboard quality-of-life pass + dependency security updates.
+
+- **Version badge in the sidebar header.** Tells you which release you're looking at — `v0.2.0` on tagged builds, `v0.2.0+abc1234` on edge images that ship between releases.
+- **Help popover.** Click the `?` in the sidebar footer for Documentation, GitHub, issue reporting, and What's new links — plus a footer showing the running muleta and Redis versions.
+- **Add-job page ~1.8 MB lighter.** Switched Shiki to `shiki/core` with fine-grained `json`/`bash`/`ts` grammar imports + the JS regex engine (drops the Oniguruma WASM). Switched Monaco to the slim `editor.api` entry, dropped the unused CSS/HTML/TS language workers. JSON validation in the data editor preserved.
+- **AdonisJS embed docs fix.** The wildcard route alone doesn't match the bare mount URL — `router.any(MOUNT, handle)` paired with `router.any(\`${MOUNT}/*\`, handle)` is required. Both `docs/embed.md` and `docs/auth.md` updated.
+- **Security**: bumped Hono to `4.12.18` (patches 5 advisories: `bodyLimit()` bypass, Cache middleware `Vary` handling, `hono/jsx` HTML injection, CSS injection in JSX SSR, JWT `NumericDate` validation). Added a pnpm override pinning `fast-uri >= 3.1.2` to clear two transitive dev-dependency CVEs.
