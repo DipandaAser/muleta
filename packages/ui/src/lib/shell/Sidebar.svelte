@@ -19,6 +19,13 @@
 	<!-- brand -->
 	<div class="flex h-12 items-center px-3 border-b border-base-300 shrink-0">
 		<BrandIntro />
+		<!-- Built at vite-config time from @muleta-dev/server's package.json + git. -->
+		<span
+			class="ml-auto font-mono-muleta text-[10px] px-1.5 py-0.5 rounded bg-base-300 text-base-content/55"
+			title="muleta version"
+		>
+			{__MULETA_VERSION__}
+		</span>
 	</div>
 
 	<!-- nav -->

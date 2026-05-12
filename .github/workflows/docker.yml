@@ -39,6 +39,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # SPA build reads `git tag --points-at HEAD` for the version badge.
+          fetch-tags: true
 
       - uses: docker/setup-qemu-action@v3
 

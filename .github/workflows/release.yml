@@ -35,10 +35,35 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build everything before publish — turbo respects workspace deps so
-      # the UI bundle exists before @muleta-dev/server's bundle-ui step
-      # tries to copy it. No-op when there are pending changesets (the
-      # action only opens the version PR in that case).
+      # If @muleta-dev/server's local version isn't on npm, this run will
+      # publish it. Push the matching v<version> tag *before* build so the
+      # UI bundle embeds a clean `v0.1.1` badge instead of `v0.1.1+<sha>`.
+      # Skip the tag push when it already exists (re-run after a failed
+      # publish): the build still sees the tag, publish retries cleanly.
+      - id: release-check
+        run: |
+          v=$(node -p "require('./packages/server/package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if npm view "@muleta-dev/server@$v" version >/dev/null 2>&1; then
+            echo "needs_tag=false" >> "$GITHUB_OUTPUT"
+          elif git rev-parse --verify "refs/tags/v$v" >/dev/null 2>&1; then
+            echo "Tag v$v already exists locally — skipping create, build will pick it up"
+            echo "needs_tag=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.release-check.outputs.needs_tag == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v="${{ steps.release-check.outputs.version }}"
+          git tag "v$v"
+          git push origin "v$v"
+
+      # Build after the tag is in place so vite.config.ts sees it at HEAD.
+      # No-op when there are pending changesets (the action only opens the
+      # version PR in that case).
       - run: pnpm build
 
       # npm Trusted Publishing requires a recent npm CLI. Node 24 ships
@@ -55,17 +80,3 @@ jobs:
           commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # changesets only emits per-package tags (e.g. `@muleta-dev/server@0.1.0`),
-      # which the Docker workflow's `v*` trigger ignores. Push a matching
-      # `v<server-version>` tag so the Docker workflow rebuilds with semver
-      # image tags. Server's version is the source — it's what the image
-      # bundles, and it stays in lockstep with core via the `linked` config.
-      - if: steps.changesets.outputs.published == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          version=$(node -p "require('./packages/server/package.json').version")
-          echo "Publishing repo tag v$version"
-          git tag "v$version"
-          git push origin "v$version"

@@ -3,6 +3,9 @@
 import type { JobDetail, Queue } from "$lib/api/client"
 
 declare global {
+  /** Inlined by Vite from `@muleta-dev/server`'s package.json + git. */
+  const __MULETA_VERSION__: string
+
   namespace App {
     // interface Error {}
     // interface Locals {}

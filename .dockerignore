@@ -13,7 +13,8 @@
 **/tests
 
 # Git / editor / OS
-.git
+# `.git` deliberately NOT ignored — standalone Dockerfile reads it for
+# tag + SHA. Builder is multi-stage, so it never ships to runtime.
 .github
 .vscode
 .idea
