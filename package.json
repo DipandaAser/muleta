@@ -9,7 +9,8 @@
   },
   "packageManager": "pnpm@10.22.0",
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev --parallel --filter @muleta-dev/standalone --filter @muleta-dev/ui",
+    "dev:all": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
