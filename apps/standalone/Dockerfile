@@ -8,8 +8,12 @@
 # ============================================================
 FROM node:24-slim AS builder
 
-# Corepack activates the pnpm version pinned in package.json
-RUN corepack enable
+# Corepack activates the pnpm version pinned in package.json.
+# git is needed by the SPA build to read tag + SHA for the version badge.
+RUN corepack enable \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -26,6 +30,9 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 # Source after deps so code changes don't invalidate the install layer
 COPY packages/ ./packages/
 COPY apps/standalone/ ./apps/standalone/
+
+# Copied late so commit metadata churn doesn't bust the install layer.
+COPY .git ./.git
 
 # Build the SPA (vite → packages/ui/build) and bundle the standalone server
 # (esbuild → apps/standalone/dist/index.js)
