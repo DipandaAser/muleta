@@ -63,13 +63,13 @@ async function bootstrap(): Promise<typeof MonacoNs> {
   // @ts-expect-error no ambient types on this submodule
   await import("monaco-editor/esm/vs/language/json/monaco.contribution")
 
-    // biome-ignore lint/suspicious/noExplicitAny: MonacoEnvironment is a global Monaco contract.
-    ; (self as any).MonacoEnvironment = {
-      getWorker(_moduleId: string, label: string) {
-        if (label === "json") return new JsonWorker()
-        return new EditorWorker()
-      },
-    }
+  // biome-ignore lint/suspicious/noExplicitAny: MonacoEnvironment is a global Monaco contract.
+  ;(self as any).MonacoEnvironment = {
+    getWorker(_moduleId: string, label: string) {
+      if (label === "json") return new JsonWorker()
+      return new EditorWorker()
+    },
+  }
 
   // Bridge Shiki's tokenizer + themes into Monaco. After this call,
   // Monaco understands the languages we already loaded for `<Code>`
