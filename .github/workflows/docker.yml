@@ -38,10 +38,12 @@ jobs:
       contents: read
 
     steps:
+      # Default checkout is enough — when the workflow is triggered by a
+      # `v*` tag (push or dispatch), the tag itself is fetched as the
+      # checked-out ref, so `git tag --points-at HEAD` resolves it. Adding
+      # `fetch-tags: true` makes a workflow_dispatch on the tag fail with
+      # "Cannot fetch both <sha> and refs/tags/v0.2.0 to refs/tags/v0.2.0".
       - uses: actions/checkout@v4
-        with:
-          # SPA build reads `git tag --points-at HEAD` for the version badge.
-          fetch-tags: true
 
       - uses: docker/setup-qemu-action@v3
 
