@@ -80,3 +80,34 @@ jobs:
           commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Concatenate each published package's CHANGELOG entry for $v so
+      # the release page carries the full story even when a change
+      # mentions one package and the linked bump propagates to the other.
+      # Idempotent on re-runs (skips if the release already exists).
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v="${{ steps.release-check.outputs.version }}"
+          notes=""
+          for f in packages/core/CHANGELOG.md packages/server/CHANGELOG.md; do
+            [ -f "$f" ] || continue
+            pkg=$(basename "$(dirname "$f")")
+            section=$(awk -v ver="## $v" '
+              $0 == ver { found = 1; next }
+              /^## / && found { exit }
+              found { print }
+            ' "$f")
+            if [ -n "$(printf %s "$section" | tr -d '[:space:]')" ]; then
+              notes+="### @muleta-dev/$pkg"$'\n\n'"$section"$'\n\n'
+            fi
+          done
+          [ -n "$notes" ] || notes="Release $v"
+
+          if gh release view "v$v" >/dev/null 2>&1; then
+            echo "Release v$v already exists, skipping"
+            exit 0
+          fi
+          gh release create "v$v" --title "v$v" --notes "$notes"
