@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { getHealthContext } from "$lib/api/health.svelte"
 	import { CircleQuestionMark } from "@lucide/svelte"
+	import HelpPopover from "./HelpPopover.svelte"
 
 	const sub = getHealthContext()
+	let helpOpen = $state(false)
 
 	let redis = $derived(sub.status?.redis)
 	let host = $derived(redis?.address ?? "connecting…")
@@ -63,7 +65,12 @@
 		type="button"
 		class="btn btn-ghost btn-square btn-xs text-base-content/60"
 		aria-label="Help"
+		aria-expanded={helpOpen}
+		data-help-trigger
+		onclick={() => (helpOpen = !helpOpen)}
 	>
 		<CircleQuestionMark size={14} />
 	</button>
 </div>
+
+<HelpPopover bind:open={helpOpen} />
