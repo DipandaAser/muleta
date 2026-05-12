@@ -1,7 +1,6 @@
 import { FlowProducer, Queue } from "bullmq"
 import type { Redis } from "ioredis"
 import {
-  pick,
   randomBillingJob,
   randomEmailJob,
   randomId,
