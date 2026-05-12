@@ -30,6 +30,7 @@
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@lucide/svelte": "^1.8.0",
     "@muleta-dev/server": "workspace:*",
+    "@shikijs/langs": "^4.0.2",
     "@shikijs/monaco": "^4.0.2",
     "@xyflow/svelte": "^1.5.2",
     "cron-parser": "^5.5.0",

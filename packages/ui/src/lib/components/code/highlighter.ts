@@ -1,25 +1,22 @@
-import type { Highlighter } from "shiki"
+import type { HighlighterCore } from "shiki/core"
 import { muletaDark, muletaLight } from "./themes"
 
 /**
- * Languages bundled with the dashboard's Shiki highlighter. Adding to this
- * list grows the chunk by ~10–30 KB per grammar — not bundled into the
- * initial page weight because `getHighlighter()` is dynamic-imported.
+ * Languages bundled with the dashboard's Shiki highlighter.
+ *
+ * Trimmed deliberately to the three we actually render:
+ *   - `json` job data, options, return values, raw views
+ *   - `bash` shell snippets in the docker-run / curl examples on
+ *     embed-doc tabs and the job-page shell views
+ *   - `ts`   `await queue.add(...)` preview in the add-job page
+ *
+ * Adding to this list grows the chunk by ~10–30 KB per grammar.
+ * Anything not in this list falls back to plain text (no colour, no
+ * crash). If a future view needs yaml/diff/etc., add the matching
+ * `@shikijs/langs/<name>` import below and re-register it on the
+ * Monaco bridge in `editor-loader.ts`.
  */
-export const SUPPORTED_LANGS = [
-  "ts",
-  "js",
-  "tsx",
-  "jsx",
-  "json",
-  "bash",
-  "sh",
-  "yaml",
-  "diff",
-  "html",
-  "css",
-  "shell",
-] as const
+export const SUPPORTED_LANGS = ["json", "bash", "ts"] as const
 
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number]
 
@@ -34,21 +31,34 @@ export const THEME_FOR = {
   "muleta-light": "muleta-light",
 } as const
 
-let instance: Promise<Highlighter> | null = null
+let instance: Promise<HighlighterCore> | null = null
 
 /**
- * Lazy singleton. Shiki's WASM + grammar load is real (~150 KB gzipped),
- * but routes that don't render `<Code>` never trigger the dynamic import.
- * Resolved highlighter is cached for the lifetime of the SPA.
+ * Lazy singleton. Built on `shiki/core` + the JavaScript regex engine
+ * (instead of the Oniguruma WASM engine) drops the ~50 KB WASM blob
+ * and a layer of grammar machinery. JSON and bash both work cleanly
+ * with the JS engine per Shiki's compatibility table.
+ *
+ * Grammars are imported one-by-one rather than via `shiki`'s bundled
+ * entry, so the chunk only carries the two languages we use.
  */
-export function getHighlighter(): Promise<Highlighter> {
+export function getHighlighter(): Promise<HighlighterCore> {
   if (!instance) {
-    instance = import("shiki").then(({ createHighlighter }) =>
-      createHighlighter({
+    instance = (async () => {
+      const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, json, bash, typescript] =
+        await Promise.all([
+          import("shiki/core"),
+          import("shiki/engine/javascript"),
+          import("@shikijs/langs/json"),
+          import("@shikijs/langs/bash"),
+          import("@shikijs/langs/typescript"),
+        ])
+      return createHighlighterCore({
         themes: [muletaDark, muletaLight],
-        langs: [...SUPPORTED_LANGS],
-      }),
-    )
+        langs: [json, bash, typescript],
+        engine: createJavaScriptRegexEngine(),
+      })
+    })()
   }
   return instance
 }

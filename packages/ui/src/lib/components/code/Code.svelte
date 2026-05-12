@@ -6,7 +6,7 @@
 	interface Props {
 		/** Source to render. */
 		code: string
-		/** Shiki language id. Defaults to `ts` since it covers the live `await queue.add(...)` preview. */
+		/** Shiki language id. Defaults to `json` — the dashboard's most common code shape (job data / opts / return values). */
 		lang?: SupportedLang
 		/** Optional file label rendered above the code. */
 		filename?: string
@@ -20,7 +20,7 @@
 
 	let {
 		code,
-		lang = "ts",
+		lang = "json",
 		filename,
 		showCopy = true,
 		wrap = false,

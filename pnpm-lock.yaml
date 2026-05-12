@@ -270,6 +270,9 @@ importers:
       '@muleta-dev/server':
         specifier: workspace:*
         version: link:../server
+      '@shikijs/langs':
+        specifier: ^4.0.2
+        version: 4.0.2
       '@shikijs/monaco':
         specifier: ^4.0.2
         version: 4.0.2
