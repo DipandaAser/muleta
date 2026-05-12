@@ -1,6 +1,6 @@
 {
   "name": "@muleta-dev/site",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Marketing + docs site for muleta. Static, deployed to GitHub Pages.",
   "license": "Apache-2.0",
   "private": true,

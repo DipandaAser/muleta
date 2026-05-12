@@ -1,5 +1,14 @@
 # @muleta-dev/standalone
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`4440732`](https://github.com/DipandaAser/muleta/commit/44407323178c15a9af85a046035016954e93458b)]:
+  - @muleta-dev/core@0.2.0
+  - @muleta-dev/server@0.2.0
+  - @muleta-dev/ui@0.0.2
+
 ## 0.0.1
 
 ### Patch Changes
