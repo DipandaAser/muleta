@@ -3,6 +3,13 @@
 import type { JobDetail, Queue } from "$lib/api/client"
 
 declare global {
+  /**
+   * `@muleta-dev/server` version, injected at build time by Vite (see
+   * `vite.config.ts`). Shown in the sidebar header so operators can tell
+   * which release they're looking at.
+   */
+  const __MULETA_VERSION__: string
+
   namespace App {
     // interface Error {}
     // interface Locals {}

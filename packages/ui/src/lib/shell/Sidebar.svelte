@@ -17,8 +17,16 @@
 	style:border-color="var(--color-sidebar-border)"
 >
 	<!-- brand -->
-	<div class="flex h-12 items-center px-3 border-b border-base-300 shrink-0">
+	<div class="flex h-12 items-center gap-2 px-3 border-b border-base-300 shrink-0">
 		<BrandIntro />
+		<!-- Version of @muleta-dev/server the UI was bundled against —
+		     injected at build time via Vite's `define`. -->
+		<span
+			class="font-mono-muleta text-[10px] px-1.5 py-0.5 rounded bg-base-300 text-base-content/55"
+			title="muleta version"
+		>
+			v{__MULETA_VERSION__}
+		</span>
 	</div>
 
 	<!-- nav -->
